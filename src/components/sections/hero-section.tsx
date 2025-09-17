@@ -9,6 +9,7 @@ import {
   AnacondaPythonIcon,
   JupyterIcon,
 } from '@/components/icons/tool-logos';
+import { BookOpen, MessageSquare } from 'lucide-react';
 
 const tools = [
   { name: 'MySQL', icon: MySQLIcon },
@@ -46,20 +47,29 @@ export default function HeroSection() {
               A brief, compelling description about your professional identity,
               expertise, and passion goes here.
             </p>
-            <div className="flex justify-center md:justify-start items-center space-x-4 pt-2">
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {totalPublications}
-                </p>
-                <p className="text-sm text-muted-foreground">Publikasi</p>
-              </div>
-              <Separator orientation="vertical" className="h-10" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {totalOpinions}
-                </p>
-                <p className="text-sm text-muted-foreground">Opini</p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 max-w-md mx-auto md:mx-0">
+              <Card className="bg-primary/10 border-primary/20">
+                <CardContent className="p-4 flex items-center">
+                  <BookOpen className="h-8 w-8 text-primary mr-4" />
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {totalPublications}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Publikasi</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-accent/10 border-accent/20">
+                <CardContent className="p-4 flex items-center">
+                  <MessageSquare className="h-8 w-8 text-accent mr-4" />
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {totalOpinions}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Opini</p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
