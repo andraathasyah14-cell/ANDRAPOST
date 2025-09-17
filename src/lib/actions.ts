@@ -76,7 +76,8 @@ export async function updateProfile(prevState:any, formData: FormData) {
       return { success: false, message: 'Validasi data profil gagal.' };
     }
     
-    await db.collection('app-data').doc('profile').set(validatedFields.data, { merge: true });
+    // await db.collection('app-data').doc('profile').set(validatedFields.data, { merge: true });
+    console.log("Profile update is disabled in this environment.");
 
     revalidatePath('/');
     revalidatePath('/admin01');

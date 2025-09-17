@@ -125,18 +125,8 @@ const mockContent: ContentPost[] = [
 // --- Main Data Fetching Functions ---
 
 export async function getProfile(): Promise<Profile> {
-  try {
-    const doc = await db.collection('app-data').doc('profile').get();
-    if (!doc.exists) {
-      // If profile doesn't exist in Firestore, create it from default
-      await db.collection('app-data').doc('profile').set(defaultProfile);
-      return defaultProfile;
-    }
-    return doc.data() as Profile;
-  } catch (error) {
-    console.error("Error fetching profile, returning default:", error);
-    return defaultProfile;
-  }
+  // Database functionality is temporarily disabled.
+  return Promise.resolve(defaultProfile);
 }
 
 export async function getAllContent(): Promise<ContentPost[]> {
