@@ -2,8 +2,8 @@
 // src/app/login/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/components/auth-provider';
+import { useActionState, useEffect, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,66 +12,50 @@ import { Loader2, LogIn } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/logo';
+import { handleLogin } from '@/lib/actions';
 
-// --- Kredensial Admin ---
-// PERINGATAN: Menyimpan kredensial di dalam kode sumber seperti ini tidak aman.
-// Ini sebaiknya hanya digunakan untuk pengembangan.
-const ADMIN_EMAIL = 'diandra.athasyah@gmail.com';
-const ADMIN_PASS = 'rahasia090107';
-const ACCESS_CODE = '090107';
-// -------------------------
+const initialState = {
+    success: false,
+    message: '',
+    errors: null,
+};
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+     <Button type="submit" className="w-full" disabled={pending}>
+        {pending ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <LogIn className="mr-2 h-4 w-4" />
+        )}
+        Masuk
+      </Button>
+  );
+}
+
 
 export default function LoginPage() {
-  const { signInOrSignUp, loading } = useAuth();
-  const [code, setCode] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [state, formAction] = useActionState(handleLogin, initialState);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (code !== ACCESS_CODE) {
-      const friendlyMessage = 'Kode akses salah. Silakan periksa kembali.';
-      setError(friendlyMessage);
+  useEffect(() => {
+    if (state.message) {
       toast({
-        title: 'Login Gagal',
-        description: friendlyMessage,
-        variant: 'destructive',
+        title: state.success ? 'Login Berhasil' : 'Login Gagal',
+        description: state.message,
+        variant: state.success ? 'default' : 'destructive',
       });
-      return;
     }
 
-    try {
-      // Jika kode benar, coba login atau daftar dengan kredensial admin
-      await signInOrSignUp(ADMIN_EMAIL, ADMIN_PASS);
-      
+    if (state.success) {
       const redirectUrl = searchParams.get('redirect') || '/admin01';
-      toast({
-        title: 'Login Berhasil!',
-        description: `Selamat datang! Akun admin telah disiapkan. Anda akan diarahkan ke ${redirectUrl}`,
-      });
-      router.push(redirectUrl);
-
-    } catch (err: any) {
-      let friendlyMessage = 'Terjadi kesalahan tak terduga saat mencoba masuk atau mendaftar.';
-      // We can add more specific error handling here if needed
-      if(err.code === 'auth/weak-password') {
-        friendlyMessage = 'Kata sandi admin internal terlalu lemah. Harap ganti di kode sumber.';
-      } else if (err.code === 'auth/email-already-in-use') {
-         friendlyMessage = 'Email admin sudah digunakan oleh akun lain. Harap hubungi developer.';
-      }
-      
-      setError(friendlyMessage);
-      toast({
-        title: 'Login Gagal',
-        description: friendlyMessage,
-        variant: 'destructive',
-      });
+      // Use router.replace to avoid adding a new entry to the history stack
+      router.replace(redirectUrl);
     }
-  };
+  }, [state, router, searchParams, toast]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -85,30 +69,22 @@ export default function LoginPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Login Admin</CardTitle>
-            <CardDescription>Masukkan kode akses untuk masuk atau menginisialisasi panel admin.</CardDescription>
+            <CardDescription>Masukkan kode akses untuk masuk ke panel admin.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form action={formAction} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="access-code">Kode Akses</Label>
                 <Input
-                  id="access-code"
+                  id="code"
+                  name="code"
                   type="password"
                   placeholder="******"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
                   required
                 />
+                 {state?.errors?.code && <p className="text-sm text-destructive">{state.errors.code[0]}</p>}
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <LogIn className="mr-2 h-4 w-4" />
-                )}
-                Masuk
-              </Button>
+              <SubmitButton />
             </form>
           </CardContent>
         </Card>

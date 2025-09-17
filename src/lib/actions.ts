@@ -17,15 +17,51 @@ async function verifyAuth() {
   if (!sessionCookie) {
     throw new Error('Unauthorized');
   }
-  if (!admin) {
-    throw new Error('Firebase Admin not initialized');
+   if (sessionCookie !== process.env.ADMIN_SESSION_SECRET) {
+    throw new Error('Invalid session');
   }
-  try {
-    const decodedClaims = await admin.auth().verifySessionCookie(sessionCookie, true);
-    return decodedClaims;
-  } catch (error) {
-    throw new Error('Unauthorized');
-  }
+}
+
+// --- NEW LOGIN ACTION ---
+const loginSchema = z.object({
+  code: z.string().min(1, "Kode akses harus diisi."),
+});
+
+export async function handleLogin(prevState: any, formData: FormData) {
+    const validatedFields = loginSchema.safeParse({
+        code: formData.get('code'),
+    });
+
+    if (!validatedFields.success) {
+        return { success: false, message: 'Validasi gagal.', errors: validatedFields.error.flatten().fieldErrors };
+    }
+
+    if (validatedFields.data.code !== process.env.ADMIN_ACCESS_CODE) {
+        return { success: false, message: 'Kode akses salah.', errors: null };
+    }
+
+    // If code is correct, set the session cookie
+    const sessionSecret = process.env.ADMIN_SESSION_SECRET;
+    if (!sessionSecret) {
+        console.error("ADMIN_SESSION_SECRET is not set in .env");
+        return { success: false, message: 'Konfigurasi server error.', errors: null };
+    }
+
+    cookies().set('__session', sessionSecret, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 5, // 5 days
+        path: '/',
+    });
+    
+    // We don't need to revalidate paths here, just signal success
+    return { success: true, message: 'Login Berhasil!', errors: null };
+}
+
+// --- NEW LOGOUT ACTION ---
+export async function handleLogout() {
+    cookies().delete('__session');
+    revalidatePath('/');
 }
 
 

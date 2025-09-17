@@ -16,11 +16,15 @@ import { ThemeToggle } from './theme-toggle';
 import { navLinks } from './main-nav';
 import { useAuth } from './auth-provider';
 import Link from 'next/link';
+import { handleLogout } from '@/lib/actions';
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { user, signOut, loading } = useAuth();
+  const { user, loading, isInitiallyLoading } = useAuth();
+  const router = useRouter();
+
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 10);
@@ -42,9 +46,15 @@ export default function Header() {
     }
     setMobileNavOpen(false);
   };
+
+  const onLogout = async () => {
+    await handleLogout();
+    router.push('/');
+    router.refresh(); // Force a refresh to update auth state across the app
+  };
   
   const AuthButton = () => {
-    if (loading) {
+    if (isInitiallyLoading) {
       return <div className="h-9 w-24 rounded-md animate-pulse bg-muted"></div>
     }
     if(user) {
@@ -55,7 +65,7 @@ export default function Header() {
               Admin Panel
             </Link>
           </Button>
-          <Button onClick={signOut} variant="outline">
+          <Button onClick={onLogout} variant="outline">
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
