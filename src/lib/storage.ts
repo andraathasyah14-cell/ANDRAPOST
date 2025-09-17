@@ -3,12 +3,15 @@
 
 import {
   deleteObject,
+  getDownloadURL,
   getStorage,
   ref,
   uploadBytesResumable,
   type UploadTaskSnapshot,
 } from 'firebase/storage';
-import { getSignedUploadUrl } from '@/lib/actions';
+import { randomUUID } from 'crypto';
+import { storage as clientStorage } from '@/lib/firebase-client';
+
 
 export type UploadProgress = {
   percentage: number;
@@ -17,69 +20,8 @@ export type UploadProgress = {
 
 type ProgressHandler = (progress: UploadProgress) => void;
 
-async function createUploadTask(
-  file: File,
-  onProgress: ProgressHandler
-): Promise<string> {
-  // 1. Get a signed URL from our server
-  const formData = new FormData();
-  formData.append('fileName', file.name);
-  formData.append('fileType', file.type);
-  
-  const signedUrlResult = await getSignedUploadUrl(null, formData);
-
-  if (!signedUrlResult.success || !signedUrlResult.signedUrl || !signedUrlResult.publicUrl) {
-    throw new Error(signedUrlResult.message || 'Gagal mendapatkan izin unggah dari server.');
-  }
-
-  const { signedUrl, publicUrl } = signedUrlResult;
-
-  // 2. Upload the file to the signed URL
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    let startTime = Date.now();
-
-    xhr.open('PUT', signedUrl, true);
-    xhr.setRequestHeader('Content-Type', file.type);
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        const percentage = (event.loaded / event.total) * 100;
-        const timeElapsed = (Date.now() - startTime) / 1000;
-        const speedBps = timeElapsed > 0 ? event.loaded / timeElapsed : 0;
-
-        let speed = '0 KB/s';
-        if (speedBps > 1024 * 1024) {
-          speed = `${(speedBps / (1024 * 1024)).toFixed(2)} MB/s`;
-        } else {
-          speed = `${(speedBps / 1024).toFixed(2)} KB/s`;
-        }
-
-        onProgress({ percentage, speed });
-      }
-    };
-
-    xhr.onload = () => {
-      if (xhr.status === 200) {
-        // The file is now in Firebase Storage, return the public, permanent URL
-        resolve(publicUrl);
-      } else {
-        console.error('Upload failed with status:', xhr.status, xhr.responseText);
-        reject(new Error(`Gagal mengunggah file. Server merespons dengan status ${xhr.status}.`));
-      }
-    };
-
-    xhr.onerror = () => {
-      console.error('Network error during upload.');
-      reject(new Error('Terjadi kesalahan jaringan saat mengunggah file.'));
-    };
-
-    xhr.send(file);
-  });
-}
-
 /**
- * Handles the client-side upload of a new file.
+ * Handles the client-side upload of a new file directly using the Client SDK.
  * @param file The file to upload.
  * @param onProgress A callback function to receive progress updates.
  * @returns The public URL of the uploaded file.
@@ -104,8 +46,56 @@ export function handleImageUpload(
       return Promise.reject(new Error('File is too large. Maximum size is 5MB.'));
   }
 
-  return createUploadTask(file, onProgress);
+  // Use clientStorage which is guaranteed to be initialized.
+  const storage = clientStorage;
+  const filePath = `uploads/${randomUUID()}-${file.name}`;
+  const storageRef = ref(storage, filePath);
+  const uploadTask = uploadBytesResumable(storageRef, file);
+
+  return new Promise((resolve, reject) => {
+    let startTime = Date.now();
+
+    uploadTask.on('state_changed',
+      (snapshot: UploadTaskSnapshot) => {
+        // Progress logic
+        const percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        const timeElapsed = (Date.now() - startTime) / 1000;
+        const speedBps = timeElapsed > 0 ? snapshot.bytesTransferred / timeElapsed : 0;
+
+        let speed = '0 KB/s';
+        if (speedBps > 1024 * 1024) {
+          speed = `${(speedBps / (1024 * 1024)).toFixed(2)} MB/s`;
+        } else {
+          speed = `${(speedBps / 1024).toFixed(2)} KB/s`;
+        }
+        
+        onProgress({ percentage, speed });
+      },
+      (error) => {
+        // Error logic
+        console.error("Upload failed:", error);
+        switch (error.code) {
+          case 'storage/unauthorized':
+            reject(new Error("You don't have permission to upload files."));
+            break;
+          case 'storage/canceled':
+            reject(new Error("Upload was canceled."));
+            break;
+          default:
+            reject(new Error("An unknown error occurred during upload."));
+            break;
+        }
+      },
+      () => {
+        // Completion logic
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          resolve(downloadURL);
+        }).catch(reject);
+      }
+    );
+  });
 }
+
 
 /**
  * Replaces an old image in Firebase Storage with a new one.
@@ -120,12 +110,12 @@ export async function handleImageReplacement(
   newFile: File,
   onProgress: ProgressHandler
 ): Promise<string> {
-  // Call getStorage() inside the function to ensure Firebase App is initialized.
-  const storage = getStorage();
+  // Use clientStorage which is guaranteed to be initialized.
+  const storage = clientStorage;
 
   // We only attempt to delete if it's a valid Firebase Storage URL.
   // Placeholder images (picsum.photos) or invalid URLs are ignored.
-  if (oldImageUrl && oldImageUrl.includes('storage.googleapis.com')) {
+  if (oldImageUrl && (oldImageUrl.includes('firebasestorage.googleapis.com') || oldImageUrl.includes('storage.googleapis.com'))) {
     try {
       const oldRef = ref(storage, oldImageUrl);
       await deleteObject(oldRef);

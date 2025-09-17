@@ -5,8 +5,6 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
-import { randomUUID } from 'crypto';
-import { cookies } from 'next/headers';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';
@@ -22,7 +20,7 @@ if (!getApps().length) {
   console.log("Firebase Admin SDK initialized on the server.");
 }
 const db = getFirestore();
-const adminStorage = getAdminStorage();
+// adminStorage is intentionally not used for uploads anymore due to instability.
 
 
 // --- AUTH HELPER ---
@@ -37,6 +35,9 @@ async function verifyAuth() {
 }
 
 // --- LOGIN ACTION ---
+// This has been simplified and does not use Firebase Auth anymore.
+import { cookies } from 'next/headers';
+
 const loginSchema = z.object({
   code: z.string().min(1, "Kode akses harus diisi."),
 });
@@ -49,7 +50,8 @@ export async function handleLogin(prevState: any, formData: FormData) {
     if (!validatedFields.success) {
         return { success: false, message: 'Validasi gagal.', errors: validatedFields.error.flatten().fieldErrors };
     }
-
+    
+    // Check against the environment variable
     if (validatedFields.data.code !== process.env.ADMIN_ACCESS_CODE) {
         return { success: false, message: 'Kode akses salah.', errors: null };
     }
@@ -67,7 +69,6 @@ export async function handleLogin(prevState: any, formData: FormData) {
         path: '/',
     });
     
-    // No revalidate needed, redirect will happen on client
     return { success: true, message: 'Login Berhasil!', errors: null };
 }
 
@@ -75,46 +76,7 @@ export async function handleLogin(prevState: any, formData: FormData) {
 export async function handleLogout() {
     cookies().delete('__session');
     revalidatePath('/'); // Revalidate to clear server-side caches
-}
-
-
-// --- GET SIGNED UPLOAD URL ACTION ---
-const getSignedUrlSchema = z.object({
-  fileName: z.string().min(1),
-  fileType: z.string().min(1),
-});
-
-export async function getSignedUploadUrl(prevState: any, formData: FormData) {
-  await verifyAuth();
-  
-  const validatedFields = getSignedUrlSchema.safeParse({
-    fileName: formData.get('fileName'),
-    fileType: formData.get('fileType'),
-  });
-
-  if (!validatedFields.success) {
-    return { success: false, message: 'Invalid file data provided.' };
-  }
-
-  const { fileName, fileType } = validatedFields.data;
-  const filePath = `uploads/${randomUUID()}-${fileName}`;
-
-  try {
-    const bucket = adminStorage.bucket();
-    const file = bucket.file(filePath);
-    const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
-    const [signedUrl] = await file.getSignedUrl({
-      version: 'v4',
-      action: 'write',
-      expires,
-      contentType: fileType,
-    });
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
-    return { success: true, signedUrl, publicUrl };
-  } catch (error) {
-    console.error('Error getting signed URL:', error);
-    return { success: false, message: 'Failed to get a signed URL from the server.' };
-  }
+    revalidatePath('/admin01');
 }
 
 
@@ -402,7 +364,6 @@ export async function handleFeedbackSubmit(prevState: any, formData: FormData) {
   }
 
   try {
-    // This flow uses its own internal admin initialization
     const {success} = await saveFeedback(validatedFields.data);
     if (!success) {
         return {
