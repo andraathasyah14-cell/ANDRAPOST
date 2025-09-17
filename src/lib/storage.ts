@@ -32,17 +32,15 @@ export function handleImageUpload(
     const storageRef = ref(storage, uniqueFileName);
     const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
-    let startTime = Date.now();
-    let lastBytesTransferred = 0;
+    const startTime = Date.now();
 
     uploadTask.on(
       'state_changed',
       (snapshot) => {
         const now = Date.now();
         const timeElapsed = (now - startTime) / 1000; // in seconds
-        const bytesSinceLastUpdate = snapshot.bytesTransferred - lastBytesTransferred;
 
-        // Calculate speed, avoid division by zero
+        // Calculate average speed, avoid division by zero
         const speedBps = timeElapsed > 0 ? snapshot.bytesTransferred / timeElapsed : 0;
         
         let speed = '';
@@ -57,17 +55,13 @@ export function handleImageUpload(
         const percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         
         onProgress({ percentage, speed });
-
-        // Update for next calculation
-        // This part is less critical for average speed but can be used for instantaneous speed
-        // lastBytesTransferred = snapshot.bytesTransferred;
-        // startTime = now;
       },
       (error) => {
         console.error("Error uploading image to Firebase Storage:", error);
         let errorMessage = 'Failed to upload image. Please try again.';
+        // Give more specific feedback for permission errors.
         if (error.code === 'storage/unauthorized') {
-          errorMessage = 'Permission denied. Please check your Firebase Storage security rules.';
+          errorMessage = 'Permission denied. Please check your Firebase Storage security rules to allow writes.';
         }
         reject(new Error(errorMessage));
       },
@@ -76,7 +70,8 @@ export function handleImageUpload(
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           resolve(downloadURL);
         } catch (urlError) {
-          reject(new Error('Failed to get download URL.'));
+           console.error("Error getting download URL:", urlError);
+          reject(new Error('Upload successful, but failed to get download URL.'));
         }
       }
     );
