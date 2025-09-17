@@ -2,9 +2,52 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/firebase-admin';
+import { db, admin } from '@/lib/firebase-admin';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
+
+
+// --- GET SIGNED UPLOAD URL ACTION ---
+// New, more robust upload method using signed URLs
+const getSignedUrlSchema = z.object({
+  fileName: z.string(),
+  fileType: z.string(),
+});
+
+export async function getSignedUploadUrl(input: {fileName: string, fileType: string}) {
+  if (!admin || !db) {
+    throw new Error('Firebase Admin is not initialized. Cannot get signed URL.');
+  }
+
+  const validatedFields = getSignedUrlSchema.safeParse(input);
+
+  if (!validatedFields.success) {
+    throw new Error('Invalid input for getting signed URL.');
+  }
+
+  const { fileName, fileType } = validatedFields.data;
+  const uniqueFileName = `${Date.now()}-${fileName}`;
+  const filePath = `uploads/${uniqueFileName}`;
+
+  const bucket = admin.storage().bucket();
+  const file = bucket.file(filePath);
+
+  try {
+    const [signedUrl] = await file.getSignedUrl({
+      version: 'v4',
+      action: 'write',
+      expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+      contentType: fileType,
+    });
+
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+    
+    return { signedUrl, publicUrl };
+  } catch (error) {
+    console.error('Error getting signed URL:', error);
+    throw new Error('Could not get signed URL.');
+  }
+}
 
 
 // --- CATEGORIZE ACTION ---
@@ -58,6 +101,9 @@ const profileSchema = z.object({
 
 
 export async function updateProfile(prevState:any, formData: FormData) {
+  if (!db) {
+    return { success: false, message: 'Database tidak tersedia. Gagal memperbarui profil.' };
+  }
   const validatedFields = profileSchema.safeParse({
     name: formData.get('name'),
     description: formData.get('description'),
@@ -71,7 +117,12 @@ export async function updateProfile(prevState:any, formData: FormData) {
   }
 
   try {
-    await db.collection('app-data').doc('profile').update(validatedFields.data);
+    const { imageUrl, ...rest } = validatedFields.data;
+    const profileUpdateData: any = { ...rest };
+    if (imageUrl) {
+        profileUpdateData.imageUrl = imageUrl;
+    }
+    await db.collection('app-data').doc('profile').update(profileUpdateData);
     revalidatePath('/');
     revalidatePath('/admin01');
     return { success: true, message: 'Profil berhasil diperbarui!' };
@@ -93,6 +144,9 @@ const opinionUploadSchema = z.object({
 
 
 export async function handleOpinionUpload(prevState: any, formData: FormData) {
+    if (!db) {
+      return { success: false, message: 'Database tidak tersedia. Gagal mengunggah opini.', errors: null };
+    }
     const validatedFields = opinionUploadSchema.safeParse({
         postedOn: formData.get('postedOn'),
         title: formData.get('title'),
@@ -136,6 +190,9 @@ const publicationUploadSchema = z.object({
 });
 
 export async function handlePublicationUpload(prevState: any, formData: FormData) {
+    if (!db) {
+      return { success: false, message: 'Database tidak tersedia. Gagal mengunggah publikasi.', errors: null };
+    }
     const validatedFields = publicationUploadSchema.safeParse({
         publishedOn: formData.get('publishedOn'),
         title: formData.get('title'),
@@ -181,6 +238,9 @@ const ongoingUploadSchema = z.object({
 });
 
 export async function handleOngoingUpload(prevState: any, formData: FormData) {
+    if (!db) {
+      return { success: false, message: 'Database tidak tersedia. Gagal mengunggah riset.', errors: null };
+    }
     const validatedFields = ongoingUploadSchema.safeParse({
         startedOn: formData.get('startedOn'),
         title: formData.get('title'),
@@ -214,6 +274,9 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
 
 // --- DELETE CONTENT ACTION ---
 export async function handleDeleteContent(contentId: string) {
+  if (!db) {
+    return { success: false, message: 'Database tidak tersedia. Gagal menghapus konten.' };
+  }
   if (!contentId) {
     return { success: false, message: 'ID Konten tidak valid.' };
   }

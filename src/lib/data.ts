@@ -27,7 +27,7 @@ export interface Tool {
 }
 
 export interface Profile {
-  name: string;
+  name:string;
   description: string;
   tools: Tool[];
   imageUrl?: string;
@@ -87,6 +87,10 @@ const defaultProfile: Profile = {
 // --- Main Data Fetching Functions ---
 
 export async function getProfile(): Promise<Profile> {
+  if (!db) {
+    console.log('Firestore is not available, returning default profile.');
+    return defaultProfile;
+  }
   try {
     const doc = await db.collection('app-data').doc('profile').get();
     if (!doc.exists) {
@@ -104,6 +108,10 @@ export async function getProfile(): Promise<Profile> {
 }
 
 export async function getAllContent(): Promise<ContentPost[]> {
+  if (!db) {
+    console.log('Firestore is not available, returning empty content array.');
+    return [];
+  }
   try {
     const snapshot = await db.collection('content').get();
     if (snapshot.empty) {

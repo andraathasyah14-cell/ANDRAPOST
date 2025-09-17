@@ -14,10 +14,15 @@ interface FirebaseAdmin {
 // This is a common pattern in serverless environments to reuse connections.
 declare global {
   // eslint-disable-next-line no-var
-  var __firebase_admin_sdk: FirebaseAdmin | undefined;
+  var __firebase_admin_sdk: FirebaseAdmin | undefined | null;
 }
 
-function initializeFirebaseAdmin(): FirebaseAdmin {
+function initializeFirebaseAdmin(): FirebaseAdmin | null {
+  // If we've already tried and failed, don't try again.
+  if (global.__firebase_admin_sdk === null) {
+    return null;
+  }
+
   if (global.__firebase_admin_sdk) {
     return global.__firebase_admin_sdk;
   }
@@ -26,14 +31,22 @@ function initializeFirebaseAdmin(): FirebaseAdmin {
   // the SDK can automatically detect the service account credentials.
   try {
     if (!admin.apps.length) {
-      admin.initializeApp();
+       const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+        : undefined;
+
+      admin.initializeApp({
+        credential: serviceAccount ? admin.credential.cert(serviceAccount) : admin.credential.applicationDefault(),
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+      });
       console.log('Firebase Admin SDK initialized successfully.');
     }
-  } catch (error) {
-    console.error('Firebase admin initialization error:', error);
-    // If initialization fails, we throw the error to prevent the app from running
-    // with a broken configuration.
-    throw new Error('Failed to initialize Firebase Admin SDK.');
+  } catch (error: any) {
+    // Log a more informative error message
+    console.error(`Firebase admin initialization error: ${error.message}. This is often caused by missing or incorrect FIREBASE_SERVICE_ACCOUNT_KEY environment variables.`);
+    // Mark initialization as failed by setting the global to null
+    global.__firebase_admin_sdk = null;
+    return null;
   }
 
   const db = admin.firestore();
@@ -45,6 +58,7 @@ function initializeFirebaseAdmin(): FirebaseAdmin {
   return firebaseAdminSDK;
 }
 
-const { db } = initializeFirebaseAdmin();
+const sdk = initializeFirebaseAdmin();
 
-export { db };
+export const db = sdk?.db ?? null;
+export const admin = sdk?.admin ?? null;

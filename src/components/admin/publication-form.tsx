@@ -70,7 +70,7 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
 
     setUploadProgress({ percentage: 0, speed: '0 KB/s' });
     try {
-      const url = await handleImageUpload(file, 'publication-images', (progress) => {
+      const url = await handleImageUpload(file, (progress) => {
         setUploadProgress(progress);
       });
       setImageUrl(url);

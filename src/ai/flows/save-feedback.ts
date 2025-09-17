@@ -29,6 +29,12 @@ const saveFeedbackFlow = ai.defineFlow(
     outputSchema: z.object({success: z.boolean()}),
   },
   async input => {
+    if (!db) {
+      console.error("Database not initialized, can't save feedback.");
+      // Gracefully fail without throwing, but return an unsuccessful status.
+      // The client-side action handler can then show a user-friendly error.
+      return {success: false};
+    }
     // Data dari formulir feedback disimpan di koleksi 'feedback' di Cloud Firestore.
     await db.collection('feedback').add({
       ...input,

@@ -70,7 +70,7 @@ export default function OpinionForm({ onUpload }: { onUpload: (prevState: any, f
 
     setUploadProgress({ percentage: 0, speed: '0 KB/s' });
     try {
-      const url = await handleImageUpload(file, 'opinion-images', (progress) => {
+      const url = await handleImageUpload(file, (progress) => {
         setUploadProgress(progress);
       });
       setImageUrl(url);

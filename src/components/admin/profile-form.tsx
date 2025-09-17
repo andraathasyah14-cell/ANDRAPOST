@@ -30,7 +30,7 @@ const profileFormSchema = z.object({
   name: z.string().min(1, 'Nama harus diisi'),
   description: z.string().min(1, 'Deskripsi harus diisi'),
   tools: z.array(toolSchema).min(1, 'Minimal satu perkakas harus ditambahkan'),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().url().optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -105,19 +105,31 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     formAction(formData);
   }
 
-  const onProfileImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onImageChange = async (event: React.ChangeEvent<HTMLInputElement>, isTool: boolean, index?: number) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (isTool && typeof index !== 'number') return;
+
+    if(isTool) {
+      setUploadingToolIndex(index!);
+    }
     setUploadProgress({ percentage: 0, speed: '0 KB/s' });
+    
     try {
-      const url = await handleImageUpload(file, 'profile-images', (progress) => {
-          setUploadProgress(progress);
+      const url = await handleImageUpload(file, (progress) => {
+        setUploadProgress(progress);
       });
-      form.setValue('imageUrl', url);
+      
+      if (isTool) {
+        form.setValue(`tools.${index!}.imageUrl`, url);
+      } else {
+        form.setValue('imageUrl', url);
+      }
+
       toast({
         title: 'Berhasil',
-        description: 'Gambar profil berhasil diunggah. Jangan lupa simpan perubahan.',
+        description: `Gambar berhasil diunggah. Jangan lupa simpan perubahan.`,
       });
     } catch (error) {
         let errorMessage = 'Terjadi kesalahan saat mengunggah gambar.';
@@ -131,37 +143,9 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
         });
     } finally {
         setUploadProgress(null);
-    }
-  };
-
-  const onToolLogoChange = async (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploadingToolIndex(index);
-    setUploadProgress({ percentage: 0, speed: '0 KB/s' });
-    try {
-      const url = await handleImageUpload(file, 'tool-logos', (progress) => {
-        setUploadProgress(progress);
-      });
-      form.setValue(`tools.${index}.imageUrl`, url);
-      toast({
-        title: 'Berhasil',
-        description: `Logo untuk ${form.getValues(`tools.${index}.name`) || 'perkakas'} berhasil diunggah.`,
-      });
-    } catch (error) {
-        let errorMessage = 'Terjadi kesalahan saat mengunggah logo.';
-        if (error instanceof Error) {
-            errorMessage = error.message;
+        if(isTool) {
+          setUploadingToolIndex(null);
         }
-        toast({
-            title: 'Gagal',
-            description: errorMessage,
-            variant: 'destructive',
-        });
-    } finally {
-        setUploadingToolIndex(null);
-        setUploadProgress(null);
     }
   };
 
@@ -193,7 +177,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 type="file" 
                 className="hidden" 
                 accept="image/png, image/jpeg, image/gif"
-                onChange={onProfileImageChange}
+                onChange={(e) => onImageChange(e, false)}
                 disabled={!!uploadProgress}
               />
             </div>
@@ -297,7 +281,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                         type="file"
                         className="hidden"
                         accept="image/png, image/jpeg, image/gif, image/svg+xml"
-                        onChange={(e) => onToolLogoChange(e, index)}
+                        onChange={(e) => onImageChange(e, true, index)}
                         disabled={uploadingToolIndex !== null}
                       />
                     </div>

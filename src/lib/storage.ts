@@ -1,8 +1,7 @@
 // src/lib/storage.ts
 'use client';
 
-import { storage } from './firebase-client';
-import { ref, uploadBytesResumable, getDownloadURL, type UploadTask } from 'firebase/storage';
+import { getSignedUploadUrl } from '@/lib/actions';
 
 export type UploadProgress = {
   percentage: number;
@@ -12,68 +11,77 @@ export type UploadProgress = {
 type ProgressHandler = (progress: UploadProgress) => void;
 
 /**
- * Handles the resumable upload of a file to Firebase Storage with progress tracking.
+ * Handles the upload of a file using a server-generated signed URL.
  * @param file The file to upload.
- * @param path The path in Firebase Storage where the file should be stored.
  * @param onProgress A callback function to receive progress updates.
  * @returns The public URL of the uploaded file.
  */
 export function handleImageUpload(
   file: File,
-  path: string,
   onProgress: ProgressHandler
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     if (!file) {
       return reject(new Error('No file provided for upload.'));
     }
 
-    const uniqueFileName = `${path}/${Date.now()}-${file.name}`;
-    const storageRef = ref(storage, uniqueFileName);
-    const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
+    try {
+      // 1. Get the signed URL from the server
+      const { signedUrl, publicUrl } = await getSignedUploadUrl({
+        fileName: file.name,
+        fileType: file.type,
+      });
 
-    const startTime = Date.now();
-
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const now = Date.now();
-        const timeElapsed = (now - startTime) / 1000; // in seconds
-
-        // Calculate average speed, avoid division by zero
-        const speedBps = timeElapsed > 0 ? snapshot.bytesTransferred / timeElapsed : 0;
-        
-        let speed = '';
-        if (speedBps > 1024 * 1024) {
-            speed = `${(speedBps / (1024 * 1024)).toFixed(2)} MB/s`;
-        } else if (speedBps > 1024) {
-            speed = `${(speedBps / 1024).toFixed(2)} KB/s`;
-        } else {
-            speed = `${speedBps.toFixed(2)} B/s`;
-        }
-
-        const percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        
-        onProgress({ percentage, speed });
-      },
-      (error) => {
-        console.error("Error uploading image to Firebase Storage:", error);
-        let errorMessage = 'Failed to upload image. Please try again.';
-        // Give more specific feedback for permission errors.
-        if (error.code === 'storage/unauthorized') {
-          errorMessage = 'Permission denied. Please check your Firebase Storage security rules to allow writes.';
-        }
-        reject(new Error(errorMessage));
-      },
-      async () => {
-        try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadURL);
-        } catch (urlError) {
-           console.error("Error getting download URL:", urlError);
-          reject(new Error('Upload successful, but failed to get download URL.'));
-        }
+      if (!signedUrl || !publicUrl) {
+        throw new Error('Failed to get a signed URL from the server.');
       }
-    );
+
+      // 2. Upload the file to the signed URL using fetch with progress tracking
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', signedUrl, true);
+      xhr.setRequestHeader('Content-Type', file.type);
+
+      const startTime = Date.now();
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const now = Date.now();
+          const timeElapsed = (now - startTime) / 1000; // in seconds
+          const speedBps = timeElapsed > 0 ? event.loaded / timeElapsed : 0;
+          
+          let speed = '0 KB/s';
+          if (speedBps > 1024 * 1024) {
+              speed = `${(speedBps / (1024 * 1024)).toFixed(2)} MB/s`;
+          } else if (speedBps > 1024) {
+              speed = `${(speedBps / 1024).toFixed(2)} KB/s`;
+          } else {
+              speed = `${speedBps.toFixed(2)} B/s`;
+          }
+
+          const percentage = (event.loaded / event.total) * 100;
+          onProgress({ percentage, speed });
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          // 3. Resolve with the public URL
+          resolve(publicUrl);
+        } else {
+          reject(new Error(`Upload failed with status: ${xhr.status} ${xhr.statusText}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error('An error occurred during the upload. Please check your network connection.'));
+      };
+
+      xhr.send(file);
+
+    } catch (error) {
+      console.error("Error during signed URL upload process:", error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during upload.';
+      reject(new Error(errorMessage));
+    }
   });
 }
