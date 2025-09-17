@@ -6,7 +6,7 @@ export const ai = genkit({
   plugins: [
     googleAI(),
     // firebase(), // Temporarily disabled to resolve build errors
-    googleCloud(),
+    googleCloud,
   ],
   model: 'googleai/gemini-2.5-flash',
 });
