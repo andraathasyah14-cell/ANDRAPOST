@@ -27,6 +27,7 @@ import {
   Tag as TagIcon,
   X,
   FileText,
+  User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -86,6 +87,10 @@ export default function PublicationList({ publications }: PublicationListProps) 
                 <Calendar className="w-4 h-4 mr-2" />
                 <span>{pub.publishedOn}</span>
               </div>
+               <div className='flex items-center text-sm text-muted-foreground'>
+                    <User className="w-4 h-4 mr-2" />
+                    <span>{pub.author}</span>
+                </div>
               <div className="flex items-center space-x-2">
                 <Button
                   size="icon"
@@ -120,10 +125,14 @@ export default function PublicationList({ publications }: PublicationListProps) 
               {selectedPub?.title}
             </DialogTitle>
             <DialogDescription asChild>
-              <div className="flex items-center space-x-4 text-sm text-muted-foreground pt-2">
+              <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground pt-2">
                 <div className="flex items-center">
                   <Calendar className="w-4 h-4 mr-2" />
                   <span>{selectedPub?.publishedOn}</span>
+                </div>
+                 <div className="flex items-center">
+                    <User className="w-4 h-4 mr-2" />
+                    <span>{selectedPub?.author}</span>
                 </div>
                 <div className="flex items-center flex-wrap gap-2">
                   <TagIcon className="w-4 h-4 mr-2" />

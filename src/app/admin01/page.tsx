@@ -36,7 +36,8 @@ export default function AdminPage() {
           <CardTitle>Content Categorization Tool</CardTitle>
           <CardDescription>
             Use AI to suggest tags for your content. Enter a title and body,
-            then click &quot;Categorize&quot;.
+            then click &quot;Categorize&quot;. This helps in organizing your
+            Opini, Publikasi, and Ongoing research.
           </CardDescription>
         </CardHeader>
         <CardContent>

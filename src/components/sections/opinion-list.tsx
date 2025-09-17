@@ -20,8 +20,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Calendar, Tag as TagIcon } from 'lucide-react';
-import { X } from 'lucide-react';
+import { Calendar, Tag as TagIcon, User, X } from 'lucide-react';
 
 interface OpinionListProps {
   opinions: OpinionPost[];
@@ -65,9 +64,15 @@ export default function OpinionList({ opinions }: OpinionListProps) {
                 ))}
               </div>
             </CardContent>
-            <CardFooter className="text-sm text-muted-foreground">
-              <Calendar className="w-4 h-4 mr-2" />
-              <span>{opinion.postedOn}</span>
+            <CardFooter className="text-sm text-muted-foreground justify-between">
+                <div className='flex items-center'>
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <span>{opinion.postedOn}</span>
+                </div>
+                <div className='flex items-center'>
+                    <User className="w-4 h-4 mr-2" />
+                    <span>{opinion.author}</span>
+                </div>
             </CardFooter>
           </Card>
         ))}
@@ -81,10 +86,14 @@ export default function OpinionList({ opinions }: OpinionListProps) {
             <DialogHeader className="p-6 pb-0">
               <DialogTitle className="text-2xl font-bold">{selectedOpinion?.title}</DialogTitle>
               <DialogDescription asChild>
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground pt-2">
+                <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground pt-2">
                     <div className="flex items-center">
                         <Calendar className="w-4 h-4 mr-2" />
                         <span>{selectedOpinion?.postedOn}</span>
+                    </div>
+                    <div className="flex items-center">
+                        <User className="w-4 h-4 mr-2" />
+                        <span>{selectedOpinion?.author}</span>
                     </div>
                      <div className="flex items-center flex-wrap gap-2">
                         <TagIcon className="w-4 h-4 mr-2" />

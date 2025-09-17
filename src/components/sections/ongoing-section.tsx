@@ -5,6 +5,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ongoingResearches } from '@/lib/data';
@@ -28,11 +29,6 @@ export default function OngoingSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {ongoingResearches.slice(0, 6).map((research) => {
-            const timeSince = formatDistanceToNow(research.startedOn, {
-              addSuffix: true,
-              locale: id,
-            });
-            // Custom replacement to match "Berjalan X hari"
             const runningTime = `Berjalan ${formatDistanceToNow(research.startedOn, { locale: id })}`;
 
             return (
@@ -55,7 +51,10 @@ export default function OngoingSection() {
                     {research.title}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex-grow">
+                <CardContent className="flex-grow space-y-3">
+                  <p className="text-sm text-muted-foreground h-20 line-clamp-4">
+                    {research.description}
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {research.tags.map((tag) => (
                       <Badge key={tag} variant="secondary">
