@@ -83,26 +83,7 @@ export default function Header() {
           </Sheet>
         </div>
         <div className="hidden md:block">
-           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[300px]">
-              <SheetHeader>
-                <Logo />
-              </SheetHeader>
-              <div className="mt-8">
-                <MainNav
-                  activeSection={activeSection}
-                  onLinkClick={handleLinkClick}
-                  isMobile={true}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
+          <MainNav activeSection={activeSection} onLinkClick={handleLinkClick} />
         </div>
       </div>
     </header>
