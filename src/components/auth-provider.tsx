@@ -7,6 +7,7 @@ import {
   getAuth,
   onIdTokenChanged,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { auth as clientAuth } from '@/lib/firebase-client';
@@ -14,14 +15,14 @@ import { auth as clientAuth } from '@/lib/firebase-client';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, pass: string) => Promise<void>;
+  signInOrSignUp: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  signIn: async () => {},
+  signInOrSignUp: async () => {},
   signOut: async () => {},
 });
 
@@ -51,9 +52,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const signIn = async (email: string, pass: string) => {
+  const signInOrSignUp = async (email: string, pass: string) => {
     setLoading(true);
-    await signInWithEmailAndPassword(clientAuth, email, pass);
+    try {
+        await signInWithEmailAndPassword(clientAuth, email, pass);
+    } catch (error: any) {
+        // If the user doesn't exist, create a new account.
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+            try {
+                await createUserWithEmailAndPassword(clientAuth, email, pass);
+            } catch (signUpError) {
+                console.error("Sign up failed after sign in failed:", signUpError);
+                setLoading(false);
+                throw signUpError; // Re-throw the sign-up error
+            }
+        } else {
+            console.error("Sign in failed with an unexpected error:", error);
+            setLoading(false);
+            throw error; // Re-throw other sign-in errors
+        }
+    }
     // onIdTokenChanged will handle setting the user and loading state
   };
 
@@ -64,7 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInOrSignUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

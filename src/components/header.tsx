@@ -49,16 +49,23 @@ export default function Header() {
     }
     if(user) {
       return (
-        <Button onClick={signOut} variant="outline">
-          <LogOut className="mr-2" />
-          Logout
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild>
+            <Link href="/admin01">
+              Admin Panel
+            </Link>
+          </Button>
+          <Button onClick={signOut} variant="outline">
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
+        </div>
       )
     }
     return (
       <Button asChild>
         <Link href="/login">
-          <LogIn className="mr-2" />
+          <LogIn className="mr-2 h-4 w-4" />
           Admin Login
         </Link>
       </Button>
@@ -77,7 +84,9 @@ export default function Header() {
       <div className="container flex h-20 items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2">
-          <AuthButton />
+          <div className="hidden sm:flex">
+             <AuthButton />
+          </div>
           <ThemeToggle />
           <div className="md:hidden">
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -91,7 +100,7 @@ export default function Header() {
                 <SheetHeader>
                   <Logo />
                 </SheetHeader>
-                <div className="mt-8">
+                <div className="mt-8 flex flex-col justify-between h-[calc(100%-4rem)]">
                   <ul className="flex flex-col space-y-2">
                     {navLinks.map((link) => (
                       <li key={link.id}>
@@ -105,6 +114,9 @@ export default function Header() {
                       </li>
                     ))}
                   </ul>
+                  <div className="sm:hidden">
+                    <AuthButton />
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>

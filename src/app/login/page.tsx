@@ -22,7 +22,7 @@ const ACCESS_CODE = '090107';
 // -------------------------
 
 export default function LoginPage() {
-  const { signIn, loading } = useAuth();
+  const { signInOrSignUp, loading } = useAuth();
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -45,21 +45,25 @@ export default function LoginPage() {
     }
 
     try {
-      // Jika kode benar, login menggunakan kredensial admin yang sudah ditentukan
-      await signIn(ADMIN_EMAIL, ADMIN_PASS);
+      // Jika kode benar, coba login atau daftar dengan kredensial admin
+      await signInOrSignUp(ADMIN_EMAIL, ADMIN_PASS);
       
       const redirectUrl = searchParams.get('redirect') || '/admin01';
       toast({
         title: 'Login Berhasil!',
-        description: `Selamat datang kembali! Anda akan diarahkan ke ${redirectUrl}`,
+        description: `Selamat datang! Akun admin telah disiapkan. Anda akan diarahkan ke ${redirectUrl}`,
       });
       router.push(redirectUrl);
 
     } catch (err: any) {
-      let friendlyMessage = 'Terjadi kesalahan. Kredensial admin internal mungkin salah atau akun tidak ada.';
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
-        friendlyMessage = 'Kredensial admin internal salah. Hubungi developer.';
+      let friendlyMessage = 'Terjadi kesalahan tak terduga saat mencoba masuk atau mendaftar.';
+      // We can add more specific error handling here if needed
+      if(err.code === 'auth/weak-password') {
+        friendlyMessage = 'Kata sandi admin internal terlalu lemah. Harap ganti di kode sumber.';
+      } else if (err.code === 'auth/email-already-in-use') {
+         friendlyMessage = 'Email admin sudah digunakan oleh akun lain. Harap hubungi developer.';
       }
+      
       setError(friendlyMessage);
       toast({
         title: 'Login Gagal',
@@ -80,8 +84,8 @@ export default function LoginPage() {
         </div>
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>Masukkan kode akses untuk masuk ke panel admin.</CardDescription>
+            <CardTitle>Login Admin</CardTitle>
+            <CardDescription>Masukkan kode akses untuk masuk atau menginisialisasi panel admin.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
