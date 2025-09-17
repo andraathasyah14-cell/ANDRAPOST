@@ -1,4 +1,7 @@
 // src/lib/firebase-admin.ts
+import { config } from 'dotenv';
+config();
+
 import admin from 'firebase-admin';
 
 // This is a more robust pattern for initializing the Firebase Admin SDK in a Next.js environment.
