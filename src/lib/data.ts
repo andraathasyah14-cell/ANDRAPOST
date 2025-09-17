@@ -89,7 +89,6 @@ const defaultProfile: Profile = {
 
 export async function getProfile(): Promise<Profile> {
   if (!db) {
-    console.log('Firestore is not available, returning default profile.');
     return defaultProfile;
   }
   try {
@@ -102,7 +101,7 @@ export async function getProfile(): Promise<Profile> {
     }
     return doc.data() as Profile;
   } catch (error) {
-    console.log('Error fetching profile, returning default profile.');
+    console.error('Error fetching profile, returning default profile:', error);
     // Return default profile as a fallback if Firestore is unreachable
     return defaultProfile;
   }
@@ -110,7 +109,6 @@ export async function getProfile(): Promise<Profile> {
 
 export async function getAllContent(): Promise<ContentPost[]> {
   if (!db) {
-    console.log('Firestore is not available, returning empty content array.');
     return [];
   }
   try {
@@ -132,7 +130,7 @@ export async function getAllContent(): Promise<ContentPost[]> {
     });
     return content;
   } catch (error) {
-      console.log("Error fetching all content, returning empty array.");
+      console.error("Error fetching all content, returning empty array:", error);
       return [];
   }
 }
