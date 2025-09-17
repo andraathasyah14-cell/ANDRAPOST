@@ -23,33 +23,36 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center p-4">
-      <div className="absolute top-4 left-4">
-        <Button asChild variant="ghost">
-          <Link href="/">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Link>
-        </Button>
-      </div>
-
-      <div className="text-center my-8">
-        <div className="inline-block">
-          <Logo />
+      <div className="w-full max-w-6xl">
+        <div className="relative py-4">
+          <div className="absolute top-4 left-0">
+            <Button asChild variant="ghost">
+              <Link href="/">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Home
+              </Link>
+            </Button>
+          </div>
+          <div className="text-center">
+            <div className="inline-block">
+              <Logo />
+            </div>
+            <p className="text-muted-foreground mt-2">Admin Panel</p>
+          </div>
         </div>
-        <p className="text-muted-foreground mt-2">Admin Panel</p>
-      </div>
 
-      <Card className="w-full max-w-4xl shadow-lg mb-8">
-        <CardHeader>
-          <CardTitle>Profile Management</CardTitle>
-          <CardDescription>
-            Edit your personal information, professional summary, and the tools you showcase.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProfileForm profileData={profileData} />
-        </CardContent>
-      </Card>
+        <Card className="w-full shadow-lg mb-8">
+          <CardHeader>
+            <CardTitle>Profile Management</CardTitle>
+            <CardDescription>
+              Edit your personal information, professional summary, and the tools you showcase.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ProfileForm profileData={profileData} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
