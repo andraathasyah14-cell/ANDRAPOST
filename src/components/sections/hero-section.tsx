@@ -35,26 +35,32 @@ export default function HeroSection() {
               {profile.description}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 max-w-md mx-auto md:mx-0">
-              <Card className="bg-primary/10 border-primary/20">
+               <Card className="group relative overflow-hidden bg-primary/10 transition-all duration-300 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary/20">
                 <CardContent className="p-4 flex items-center">
-                  <BookOpen className="h-8 w-8 text-primary mr-4" />
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {totalPublications}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Publikasi</p>
+                  <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-primary via-green-500 to-accent opacity-0 transition-opacity duration-1000 group-hover:opacity-75 blur"></div>
+                   <div className="relative flex items-center">
+                    <BookOpen className="h-8 w-8 text-primary mr-4 transition-transform duration-300 group-hover:scale-110" />
+                    <div>
+                        <p className="text-2xl font-bold text-foreground">
+                        {totalPublications}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Publikasi</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-accent/10 border-accent/20">
-                <CardContent className="p-4 flex items-center">
-                  <MessageSquare className="h-8 w-8 text-accent mr-4" />
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {totalOpinions}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Opini</p>
-                  </div>
+              <Card className="group relative overflow-hidden bg-accent/10 transition-all duration-300 hover:bg-accent/20 hover:shadow-lg hover:shadow-accent/20">
+                 <CardContent className="p-4 flex items-center">
+                   <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-accent via-green-400 to-primary opacity-0 transition-opacity duration-1000 group-hover:opacity-75 blur"></div>
+                    <div className="relative flex items-center">
+                        <MessageSquare className="h-8 w-8 text-accent mr-4 transition-transform duration-300 group-hover:scale-110" />
+                        <div>
+                            <p className="text-2xl font-bold text-foreground">
+                            {totalOpinions}
+                            </p>
+                            <p className="text-sm text-muted-foreground">Opini</p>
+                        </div>
+                    </div>
                 </CardContent>
               </Card>
             </div>
