@@ -24,9 +24,9 @@ type NavLink = {
 
 export const navLinks: NavLink[] = [
   { id: 'profile', label: 'Profil', icon: User },
-  { id: 'ongoing', label: 'Ongoing', icon: ClipboardList },
   { id: 'opini', label: 'Opini', icon: Lightbulb },
   { id: 'publikasi', label: 'Publikasi', icon: BookOpen },
+  { id: 'ongoing', label: 'Ongoing', icon: ClipboardList },
   { id: 'feedback', label: 'Kritik & Saran', icon: MessageSquare },
 ];
 
