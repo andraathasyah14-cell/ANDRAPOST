@@ -5,6 +5,7 @@ import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
 import { revalidatePath } from 'next/cache';
+import { PlaceHolderImages } from './placeholder-images';
 
 const FormSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -59,12 +60,9 @@ export async function updateProfile(prevState:any, formData: FormData) {
 
     const tools = toolEntries.map((entry: any) => {
        const tool = JSON.parse(entry);
-       // For now, we only save the name and icon reference.
-       // The actual icon components are in tool-logos.tsx
-       // and the file upload logic would need a more complex backend.
        return {
          name: tool.name,
-         icon: tool.icon // This assumes the icon field holds a string identifier like "MySQL"
+         icon: tool.icon
        };
     });
 
@@ -88,4 +86,71 @@ export async function updateProfile(prevState:any, formData: FormData) {
     console.error('Error updating profile:', error);
     return { success: false, message: 'Gagal memperbarui profil.' };
   }
+}
+
+
+const opinionSchema = z.object({
+    postedOn: z.string().min(1, "Waktu harus diisi"),
+    author: z.string().min(1, "Nama penulis harus diisi"),
+    title: z.string().min(1, "Judul harus diisi"),
+    tags: z.array(z.string()).min(1, "Pilih setidaknya satu tag"),
+    content: z.string().min(1, "Isi tidak boleh kosong"),
+    image: z.string().min(1, "Gambar harus diisi"),
+});
+
+
+export async function handleOpinionUpload(prevState: any, formData: FormData) {
+    const validatedFields = opinionSchema.safeParse({
+        postedOn: formData.get('postedOn'),
+        author: formData.get('author'),
+        title: formData.get('title'),
+        tags: formData.getAll('tags'),
+        content: formData.get('content'),
+        image: formData.get('image'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            success: false,
+            message: 'Validation failed',
+            errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+    
+    try {
+        const opinionsPath = path.join(process.cwd(), 'src', 'content', 'opinions.json');
+        const opinionsJson = await fs.readFile(opinionsPath, 'utf-8');
+        const opinions = JSON.parse(opinionsJson);
+
+        const newId = `opini${String(opinions.length + 1).padStart(2, '0')}`;
+        
+        // Check if image id exists in placeholder images
+        const imageExists = PlaceHolderImages.some(img => img.id === validatedFields.data.image);
+        if (!imageExists) {
+            return {
+                success: false,
+                message: "Image ID not found.",
+                errors: { image: ['Please provide a valid Image ID from the available list.'] }
+            };
+        }
+
+        const newOpinion = {
+            id: newId,
+            ...validatedFields.data,
+        };
+
+        opinions.push(newOpinion);
+
+        await fs.writeFile(opinionsPath, JSON.stringify(opinions, null, 2));
+
+        revalidatePath('/');
+        revalidatePath('/opini');
+        revalidatePath('/admin01');
+        
+        return { success: true, message: 'Opini berhasil ditambahkan!', errors: null };
+
+    } catch (error) {
+        console.error('Error uploading opinion:', error);
+        return { success: false, message: 'Gagal menambahkan opini.', errors: null };
+    }
 }
