@@ -9,19 +9,26 @@ declare global {
 }
 
 function initializeGenkit(): Genkit {
+  // In a development environment, we reuse the existing Genkit instance to avoid
+  // re-initialization on hot-reloads, which can cause memory leaks and warnings.
+  if (process.env.NODE_ENV !== 'production') {
     if (global.__genkit_sdk) {
-        return global.__genkit_sdk;
+      return global.__genkit_sdk;
     }
+  }
 
-    const genkitSDK = genkit({
-      plugins: [
-        googleAI(),
-      ],
-      model: 'googleai/gemini-2.5-flash',
-    });
+  const genkitSDK = genkit({
+    plugins: [
+      googleAI(),
+    ],
+    model: 'googleai/gemini-2.5-flash',
+  });
 
+  if (process.env.NODE_ENV !== 'production') {
     global.__genkit_sdk = genkitSDK;
-    return genkitSDK;
+  }
+  
+  return genkitSDK;
 }
 
 export const ai = initializeGenkit();
