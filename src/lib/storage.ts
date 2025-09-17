@@ -1,14 +1,14 @@
+
 'use client';
 
 import {
+  deleteObject,
   getStorage,
   ref,
   uploadBytesResumable,
-  getDownloadURL,
-  deleteObject,
   type UploadTaskSnapshot,
 } from 'firebase/storage';
-import { storage as firebaseStorage } from '@/lib/firebase-client';
+import { getSignedUploadUrl } from '@/lib/actions';
 
 export type UploadProgress = {
   percentage: number;
@@ -17,60 +17,64 @@ export type UploadProgress = {
 
 type ProgressHandler = (progress: UploadProgress) => void;
 
-function createUploadTask(
+async function createUploadTask(
   file: File,
   onProgress: ProgressHandler
 ): Promise<string> {
+  // 1. Get a signed URL from our server
+  const formData = new FormData();
+  formData.append('fileName', file.name);
+  formData.append('fileType', file.type);
+  
+  const signedUrlResult = await getSignedUploadUrl(null, formData);
+
+  if (!signedUrlResult.success || !signedUrlResult.signedUrl || !signedUrlResult.publicUrl) {
+    throw new Error(signedUrlResult.message || 'Gagal mendapatkan izin unggah dari server.');
+  }
+
+  const { signedUrl, publicUrl } = signedUrlResult;
+
+  // 2. Upload the file to the signed URL
   return new Promise((resolve, reject) => {
-    if (!firebaseStorage) {
-        return reject(new Error("Firebase Storage is not initialized. Check your client config."));
-    }
-    const fileId = window.crypto.randomUUID();
-    const storageRef = ref(firebaseStorage, `uploads/${fileId}-${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const xhr = new XMLHttpRequest();
+    let startTime = Date.now();
 
-    const startTime = Date.now();
+    xhr.open('PUT', signedUrl, true);
+    xhr.setRequestHeader('Content-Type', file.type);
 
-    uploadTask.on(
-      'state_changed',
-      (snapshot: UploadTaskSnapshot) => {
-        // Progress logic
-        const percentage =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        const timeElapsed = (Date.now() - startTime) / 1000; // in seconds
-        const speedBps = timeElapsed > 0 ? snapshot.bytesTransferred / timeElapsed : 0;
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentage = (event.loaded / event.total) * 100;
+        const timeElapsed = (Date.now() - startTime) / 1000;
+        const speedBps = timeElapsed > 0 ? event.loaded / timeElapsed : 0;
 
         let speed = '0 KB/s';
         if (speedBps > 1024 * 1024) {
           speed = `${(speedBps / (1024 * 1024)).toFixed(2)} MB/s`;
-        } else if (speedBps > 1024) {
-          speed = `${(speedBps / 1024).toFixed(2)} KB/s`;
         } else {
-          speed = `${speedBps.toFixed(2)} B/s`;
+          speed = `${(speedBps / 1024).toFixed(2)} KB/s`;
         }
 
         onProgress({ percentage, speed });
-      },
-      (error) => {
-        // Error logic
-        console.error('Upload failed:', error);
-        reject(
-          new Error(
-            `Upload failed. Code: ${error.code}. Message: ${error.message}. Please check Storage security rules and configuration.`
-          )
-        );
-      },
-      async () => {
-        // Completion logic
-        try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadURL);
-        } catch (error) {
-          console.error('Failed to get download URL:', error);
-          reject(new Error('Upload complete, but failed to get download URL.'));
-        }
       }
-    );
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        // The file is now in Firebase Storage, return the public, permanent URL
+        resolve(publicUrl);
+      } else {
+        console.error('Upload failed with status:', xhr.status, xhr.responseText);
+        reject(new Error(`Gagal mengunggah file. Server merespons dengan status ${xhr.status}.`));
+      }
+    };
+
+    xhr.onerror = () => {
+      console.error('Network error during upload.');
+      reject(new Error('Terjadi kesalahan jaringan saat mengunggah file.'));
+    };
+
+    xhr.send(file);
   });
 }
 
@@ -96,10 +100,12 @@ export function handleImageUpload(
       new Error('Invalid file type. Please upload a valid image file.')
     );
   }
+  if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      return Promise.reject(new Error('File is too large. Maximum size is 5MB.'));
+  }
 
   return createUploadTask(file, onProgress);
 }
-
 
 /**
  * Replaces an old image in Firebase Storage with a new one.
@@ -114,20 +120,27 @@ export async function handleImageReplacement(
   newFile: File,
   onProgress: ProgressHandler
 ): Promise<string> {
-  
+  const storage = getStorage();
+
+  // We only attempt to delete if it's a valid Firebase Storage URL.
+  // Placeholder images (picsum.photos) or invalid URLs are ignored.
   if (oldImageUrl && oldImageUrl.includes('storage.googleapis.com')) {
     try {
-      const oldRef = ref(firebaseStorage, oldImageUrl);
+      const oldRef = ref(storage, oldImageUrl);
       await deleteObject(oldRef);
-      console.log("Successfully deleted old image:", oldImageUrl);
+      console.log('Successfully deleted old image:', oldImageUrl);
     } catch (error: any) {
       // It's okay if the old image doesn't exist. We can ignore that error.
       if (error.code !== 'storage/object-not-found') {
-        console.warn("Could not delete old image, it might not exist or there's a permission issue:", error);
+        console.warn(
+          "Could not delete old image, it might not exist or there's a permission issue:",
+          error
+        );
       }
     }
   }
 
-  // Now, upload the new file and return its URL
+  // Now, upload the new file and return its public URL
   return handleImageUpload(newFile, onProgress);
 }
+
