@@ -2,7 +2,6 @@
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen, MessageSquare } from 'lucide-react';
-import { ToolLogos } from '../icons/tool-logos';
 import type { OpinionContent, PublicationContent, Profile } from '@/lib/data';
 
 interface HeroSectionProps {
@@ -73,21 +72,18 @@ export default function HeroSection({ profile, opinions, publications }: HeroSec
           <Card className="shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 md:gap-x-12">
-                {profile.tools.map((tool) => {
-                  const Icon = ToolLogos[tool.icon as keyof typeof ToolLogos];
-                  return (
-                    <div
-                      key={tool.name}
-                      className="flex items-center space-x-3 text-muted-foreground"
-                      title={tool.name}
-                    >
-                      {Icon && <Icon className="h-6 w-6" />}
-                      <span className="hidden sm:inline text-sm font-medium">
-                        {tool.name}
-                      </span>
-                    </div>
-                  );
-                })}
+                {profile.tools.map((tool) => (
+                  <div
+                    key={tool.name}
+                    className="flex items-center space-x-3 text-muted-foreground"
+                    title={tool.name}
+                  >
+                    <Image src={tool.imageUrl} alt={tool.name} width={24} height={24} className="h-6 w-6 object-contain" />
+                    <span className="hidden sm:inline text-sm font-medium">
+                      {tool.name}
+                    </span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

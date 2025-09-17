@@ -24,7 +24,7 @@ export interface ImageDetails {
 
 export interface Tool {
   name: string;
-  icon: string;
+  imageUrl: string;
 }
 
 export interface Profile {
@@ -74,10 +74,10 @@ const defaultProfile: Profile = {
   name: "Diandra Athasyah Subagja",
   description: "Seorang analis kebijakan publik dengan minat pada teknologi dan pemerintahan. Saat ini bekerja sebagai peneliti di sebuah lembaga think tank independen di Jakarta.",
   tools: [
-    { name: "Stata", icon: "Stata" },
-    { name: "MySQL", icon: "MySQL" },
-    { name: "Jupyter", icon: "Jupyter" },
-    { name: "Anaconda", icon: "Anaconda" },
+    { name: "Stata", imageUrl: "/tool-logos/stata.svg" },
+    { name: "MySQL", imageUrl: "/tool-logos/mysql.svg" },
+    { name: "Jupyter", imageUrl: "/tool-logos/jupyter.svg" },
+    { name: "Anaconda", imageUrl: "/tool-logos/anaconda.svg" },
   ],
   imageUrl: "https://picsum.photos/seed/profile/400/400",
 };

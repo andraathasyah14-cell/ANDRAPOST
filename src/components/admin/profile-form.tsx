@@ -13,18 +13,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { BookOpen, MessageSquare, PlusCircle, Trash2, Loader2, Camera } from 'lucide-react';
+import { BookOpen, MessageSquare, PlusCircle, Trash2, Loader2, Camera, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { updateProfile } from '@/lib/actions';
-import { ToolLogos } from '@/components/icons/tool-logos';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { handleImageUpload } from '@/lib/storage';
 import type { Profile } from '@/lib/data';
 
 const toolSchema = z.object({
   name: z.string().min(1, 'Nama perkakas harus diisi'),
-  icon: z.string().min(1, 'Ikon harus dipilih'),
+  imageUrl: z.string().min(1, 'Logo harus diunggah'),
 });
 
 const profileFormSchema = z.object({
@@ -58,6 +56,7 @@ function SubmitButton() {
 export default function ProfileForm({ profileData }: ProfileFormProps) {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadingToolIndex, setUploadingToolIndex] = useState<number | null>(null);
   const [state, formAction] = useActionState(updateProfile, { success: false, message: '' });
 
   const form = useForm<ProfileFormValues>({
@@ -94,8 +93,6 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     });
   }, [profileData, form]);
 
-  const availableIcons = Object.keys(ToolLogos);
-  
   const handleFormSubmit = (data: ProfileFormValues) => {
     const formData = new FormData();
     formData.append('name', data.name);
@@ -107,7 +104,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     formAction(formData);
   }
 
-  const onFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onProfileImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -133,6 +130,34 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
         setIsUploading(false);
     }
   };
+
+  const onToolLogoChange = async (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingToolIndex(index);
+    try {
+      const url = await handleImageUpload(file, 'tool-logos');
+      form.setValue(`tools.${index}.imageUrl`, url);
+      toast({
+        title: 'Berhasil',
+        description: `Logo untuk ${form.getValues(`tools.${index}.name`) || 'perkakas'} berhasil diunggah.`,
+      });
+    } catch (error) {
+        let errorMessage = 'Terjadi kesalahan saat mengunggah logo.';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+        toast({
+            title: 'Gagal',
+            description: errorMessage,
+            variant: 'destructive',
+        });
+    } finally {
+        setUploadingToolIndex(null);
+    }
+  };
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -161,7 +186,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 type="file" 
                 className="hidden" 
                 accept="image/png, image/jpeg, image/gif"
-                onChange={onFileChange}
+                onChange={onProfileImageChange}
                 disabled={isUploading}
               />
             </div>
@@ -244,33 +269,30 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                         </FormItem>
                       )}
                     />
-                    <Controller
-                        control={form.control}
-                        name={`tools.${index}.icon`}
-                        render={({ field }) => (
-                            <FormItem className="flex-grow">
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Pilih Ikon" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {availableIcons.map(iconName => (
-                                            <SelectItem key={iconName} value={iconName}>{iconName}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    <div className="flex items-center gap-2">
+                      {form.watch(`tools.${index}.imageUrl`) && (
+                        <Image src={form.watch(`tools.${index}.imageUrl`)} alt="Tool Logo" width={40} height={40} className="rounded-md object-contain aspect-square bg-muted p-1" />
+                      )}
+                      <Button asChild variant="outline" size="icon">
+                        <Label htmlFor={`tool-logo-upload-${index}`}>
+                          {uploadingToolIndex === index ? <Loader2 className="animate-spin" /> : <Upload />}
+                        </Label>
+                      </Button>
+                      <Input
+                        id={`tool-logo-upload-${index}`}
+                        type="file"
+                        className="hidden"
+                        accept="image/png, image/jpeg, image/gif, image/svg+xml"
+                        onChange={(e) => onToolLogoChange(e, index)}
+                        disabled={uploadingToolIndex === index}
+                      />
+                    </div>
                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 ))}
-                <Button type="button" variant="outline" onClick={() => append({ name: '', icon: '' })}>
+                <Button type="button" variant="outline" onClick={() => append({ name: '', imageUrl: '' })}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Tambah Perkakas
                 </Button>

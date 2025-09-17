@@ -49,7 +49,7 @@ export async function handleCategorize(prevState: any, formData: FormData) {
 
 const toolSchema = z.object({
   name: z.string().min(1, 'Nama perkakas harus diisi'),
-  icon: z.string().min(1, 'Ikon harus dipilih'),
+  imageUrl: z.string().min(1, 'Logo harus diunggah'),
 });
 
 const profileSchema = z.object({
@@ -61,31 +61,11 @@ const profileSchema = z.object({
 
 
 export async function updateProfile(prevState:any, formData: FormData) {
-  try {
-    const parsedTools = formData.getAll('tools').map(t => JSON.parse(t.toString()));
-    
-    const validatedFields = profileSchema.safeParse({
-        name: formData.get('name'),
-        description: formData.get('description'),
-        tools: parsedTools,
-        imageUrl: formData.get('imageUrl'),
-    });
-
-    if (!validatedFields.success) {
-      console.log(validatedFields.error.flatten().fieldErrors);
-      return { success: false, message: 'Validasi data profil gagal.' };
-    }
-    
-    // await db.collection('app-data').doc('profile').set(validatedFields.data, { merge: true });
-    console.log("Profile update is disabled in this environment.");
-
-    revalidatePath('/');
-    revalidatePath('/admin01');
-    return { success: true, message: 'Profil berhasil diperbarui!' };
-  } catch (error) {
-    console.error("Error updating profile:", error);
-    return { success: false, message: 'Gagal memperbarui profil.' };
-  }
+  // Database functionality is temporarily disabled.
+  console.log("Profile update is disabled in this environment.");
+  revalidatePath('/');
+  revalidatePath('/admin01');
+  return { success: true, message: 'Fungsi pembaruan profil dinonaktifkan sementara.' };
 }
 
 // --- OPINION UPLOAD ACTION ---
