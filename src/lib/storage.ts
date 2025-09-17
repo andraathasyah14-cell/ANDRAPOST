@@ -25,6 +25,11 @@ export function handleImageUpload(
       return reject(new Error('No file provided for upload.'));
     }
 
+    const allowedTypes = ['image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      return reject(new Error('Invalid file type. Please upload a JPG or PNG file.'));
+    }
+    
     const uniqueFileName = `${Date.now()}-${file.name}`;
     const storageRef = ref(storage, `uploads/${uniqueFileName}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
@@ -56,13 +61,13 @@ export function handleImageUpload(
         let errorMessage = 'Upload failed. Please check your network and Firebase Storage rules.';
         switch (error.code) {
           case 'storage/unauthorized':
-            errorMessage = 'Permission denied. Please check your Firebase Storage security rules.';
+            errorMessage = 'Permission denied. Please check your Firebase Storage security rules to allow writes.';
             break;
           case 'storage/canceled':
             errorMessage = 'Upload was canceled.';
             break;
           case 'storage/unknown':
-            errorMessage = 'An unknown error occurred during upload.';
+            errorMessage = 'An unknown error occurred during upload. Check browser console for details.';
             break;
         }
         reject(new Error(errorMessage));
