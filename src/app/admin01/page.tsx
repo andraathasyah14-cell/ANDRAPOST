@@ -10,19 +10,19 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Logo from '@/components/logo';
-import { opinions, publications, tools } from '@/lib/data';
+import { opinions, publications, tools, profile } from '@/lib/data';
 
 export default function AdminPage() {
   const profileData = {
-    name: 'Your Name',
-    description: 'A brief, compelling description about your professional identity, expertise, and passion goes here.',
+    name: profile.name,
+    description: profile.description,
     totalPublications: publications.length,
     totalOpinions: opinions.length,
     tools: tools,
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center p-4">
       <div className="absolute top-4 left-4">
         <Button asChild variant="ghost">
           <Link href="/">
@@ -32,14 +32,14 @@ export default function AdminPage() {
         </Button>
       </div>
 
-      <div className="text-center mb-8">
+      <div className="text-center my-8">
         <div className="inline-block">
           <Logo />
         </div>
         <p className="text-muted-foreground mt-2">Admin Panel</p>
       </div>
 
-      <Card className="w-full max-w-4xl shadow-lg">
+      <Card className="w-full max-w-4xl shadow-lg mb-8">
         <CardHeader>
           <CardTitle>Profile Management</CardTitle>
           <CardDescription>

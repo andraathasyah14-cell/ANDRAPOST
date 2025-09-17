@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { publications, opinions, tools } from '@/lib/data';
+import { publications, opinions, tools, profile } from '@/lib/data';
 
 import { BookOpen, MessageSquare } from 'lucide-react';
 import { ToolLogos } from '../icons/tool-logos';
@@ -29,11 +29,10 @@ export default function HeroSection() {
           </div>
           <div className="md:col-span-2 space-y-4 text-center md:text-left">
             <h1 className="text-4xl md:text-5xl font-bold font-headline tracking-tight text-primary">
-              Your Name
+              {profile.name}
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto md:mx-0">
-              A brief, compelling description about your professional identity,
-              expertise, and passion goes here.
+              {profile.description}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 max-w-md mx-auto md:mx-0">
               <Card className="bg-primary/10 border-primary/20">

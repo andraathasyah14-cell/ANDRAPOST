@@ -2,6 +2,7 @@ import opinionsData from '@/content/opinions.json';
 import publicationsData from '@/content/publications.json';
 import ongoingData from '@/content/ongoing.json';
 import toolsData from '@/content/tools.json';
+import profileData from '@/content/profile.json';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { ImagePlaceholder } from './placeholder-images';
 
@@ -53,6 +54,11 @@ export interface Tool {
   icon: string;
 }
 
+export interface Profile {
+  name: string;
+  description: string;
+}
+
 const allImages = PlaceHolderImages;
 
 // The issue is that the image objects in your JSON data files are just strings, 
@@ -67,3 +73,4 @@ export const opinions: OpinionPost[] = opinionsData.map(mapData);
 export const publications: PublicationPost[] = publicationsData.map(mapData);
 export const ongoingResearches: OngoingResearch[] = ongoingData.map(mapData);
 export const tools: Tool[] = toolsData;
+export const profile: Profile = profileData;

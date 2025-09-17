@@ -1,34 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { z } from 'zod';
+import { useFormState, useFormStatus } from 'react-dom';
+import { useEffect, useRef } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  BookOpen,
-  MessageSquare,
-  PlusCircle,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { BookOpen, MessageSquare, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
+import { updateProfile } from '@/lib/actions';
+import { ToolLogos } from '@/components/icons/tool-logos';
 
 const toolSchema = z.object({
   name: z.string().min(1, 'Tool name is required'),
-  icon: z.any().refine(file => file, 'Icon is required.'),
+  icon: z.string().min(1, 'Icon name is required'),
 });
 
 const profileSchema = z.object({
@@ -49,37 +40,56 @@ interface ProfileFormProps {
   };
 }
 
-export default function ProfileForm({ profileData }: ProfileFormProps) {
-  const [profileImage, setProfileImage] = useState(
-    'https://picsum.photos/seed/profile/400/400'
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      Save Changes
+    </Button>
   );
+}
+
+export default function ProfileForm({ profileData }: ProfileFormProps) {
+  const { toast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
+  
+  const [state, formAction] = useFormState(updateProfile, { success: false, message: '' });
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: profileData.name,
       description: profileData.description,
-      tools: profileData.tools.map(t => ({...t, icon: null})),
+      tools: profileData.tools,
     },
   });
-
+  
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'tools',
   });
 
-  const onSubmit: SubmitHandler<ProfileFormValues> = (data) => {
-    // Here you would typically handle the form submission,
-    // e.g., by sending the data to your backend.
-    console.log(data);
-    alert('Profile updated successfully! (Check console for data)');
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setProfileImage(URL.createObjectURL(file));
+  useEffect(() => {
+    if (state.message) {
+      toast({
+        title: state.success ? 'Success' : 'Error',
+        description: state.message,
+        variant: state.success ? 'default' : 'destructive',
+      });
     }
-  };
+  }, [state, toast]);
+  
+    // When the profileData prop changes (due to revalidation), reset the form
+  useEffect(() => {
+    form.reset({
+      name: profileData.name,
+      description: profileData.description,
+      tools: profileData.tools,
+    });
+  }, [profileData, form]);
+
+  const availableIcons = Object.keys(ToolLogos);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -90,23 +100,15 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
             <Image
-              src={profileImage}
+              src="https://picsum.photos/seed/profile/400/400"
               alt="Profile"
               width={150}
               height={150}
               className="rounded-full aspect-square object-cover border-4 border-background shadow-lg"
             />
-            <div className="w-full">
-              <Label htmlFor="picture" className="sr-only">
-                Choose file
-              </Label>
-              <Input
-                id="picture"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
-            </div>
+             <p className="text-sm text-center text-muted-foreground">
+              Profile photo upload is for demonstration and is not connected to the server.
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -117,18 +119,14 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
             <div className="flex items-center">
               <BookOpen className="h-6 w-6 text-primary mr-4" />
               <div>
-                <p className="text-xl font-bold">
-                  {profileData.totalPublications}
-                </p>
+                <p className="text-xl font-bold">{profileData.totalPublications}</p>
                 <p className="text-sm text-muted-foreground">Publikasi</p>
               </div>
             </div>
             <div className="flex items-center">
               <MessageSquare className="h-6 w-6 text-accent mr-4" />
               <div>
-                <p className="text-xl font-bold">
-                  {profileData.totalOpinions}
-                </p>
+                <p className="text-xl font-bold">{profileData.totalOpinions}</p>
                 <p className="text-sm text-muted-foreground">Opini</p>
               </div>
             </div>
@@ -138,7 +136,24 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
 
       <div className="lg:col-span-2">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form
+            ref={formRef}
+            action={formAction}
+            onSubmit={form.handleSubmit(() => {
+                const formData = new FormData(formRef.current!);
+                const tools = form.getValues('tools');
+                
+                // Clear previous tools before adding new ones
+                formData.delete('tools');
+                
+                tools.forEach(tool => {
+                    formData.append('tools', JSON.stringify(tool));
+                });
+                
+                formAction(formData);
+            })}
+            className="space-y-8"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -160,11 +175,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 <FormItem>
                   <FormLabel>Deskripsi Singkat</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="A brief, compelling description..."
-                      rows={5}
-                      {...field}
-                    />
+                    <Textarea placeholder="A brief, compelling description..." rows={5} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -191,44 +202,33 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                     <FormField
                       control={form.control}
                       name={`tools.${index}.icon`}
-                      render={({ field: { onChange, ...fieldProps } }) => (
+                      render={({ field }) => (
                         <FormItem className="flex-grow">
-                          <FormControl>
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              onChange={(event) =>
-                                onChange(event.target.files && event.target.files[0])
-                              }
-                              {...fieldProps}
-                            />
-                          </FormControl>
+                           <FormControl>
+                             <select {...field} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                               <option value="">Select Icon</option>
+                               {availableIcons.map(iconName => (
+                                 <option key={iconName} value={iconName}>{iconName}</option>
+                               ))}
+                             </select>
+                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => remove(index)}
-                    >
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => append({ name: '', icon: null })}
-                >
+                <Button type="button" variant="outline" onClick={() => append({ name: '', icon: '' })}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add Tool
                 </Button>
               </div>
             </div>
 
-            <Button type="submit">Save Changes</Button>
+            <SubmitButton />
           </form>
         </Form>
       </div>
