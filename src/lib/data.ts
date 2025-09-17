@@ -73,7 +73,7 @@ export type ContentPost = OpinionContent | PublicationContent | OngoingContent;
 // --- MOCK DATA ---
 const defaultProfile: Profile = {
   name: "Diandra Athasyah Subagja",
-  description: "Seorang analis kebijakan publik dengan minat pada teknologi dan pemerintahan. Saat ini bekerja sebagai peneliti di sebuah lembaga think tank independen di Jakarta.",
+  description: "Peneliti dan analis independen teknologi, government, corporate, masyarakat dari domestik hingga internasional",
   tools: [
     { name: "Stata", imageUrl: "/tool-logos/stata.svg" },
     { name: "MySQL", imageUrl: "/tool-logos/mysql.svg" },
