@@ -10,7 +10,7 @@ const defaultProfile: Profile = {
   name: "Diandra Athasyah Subagja",
   description: "Independent researcher and analyst on technology, government, corporate, and community topics, from domestic to international.",
   tools: [],
-  imageUrl: "https://picsum.photos/seed/profile/400/400",
+  imageUrl: "://picsum.photos/seed/profile/400/400",
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -101,3 +101,4 @@ export default function RootLayout({
     </html>
   );
 }
+

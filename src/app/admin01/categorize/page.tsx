@@ -22,7 +22,7 @@ export default function CategorizePage() {
             <Button asChild variant="ghost">
               <Link href="/admin01">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Admin
+                Kembali ke Admin
               </Link>
             </Button>
           </div>
@@ -30,15 +30,15 @@ export default function CategorizePage() {
             <div className="inline-block">
               <Logo />
             </div>
-            <p className="text-muted-foreground mt-2">AI Content Categorizer</p>
+            <p className="text-muted-foreground mt-2">Kategorisasi Konten AI</p>
           </div>
         </div>
 
         <Card className="w-full shadow-lg">
           <CardHeader>
-            <CardTitle>Categorize Content</CardTitle>
+            <CardTitle>Kategorikan Konten</CardTitle>
             <CardDescription>
-              Enter a title and body to get AI-powered tag suggestions for your content. This helps streamline the content upload process.
+              Masukkan judul dan isi untuk mendapatkan saran tag yang didukung AI untuk konten Anda. Ini membantu menyederhanakan proses unggah konten.
             </CardDescription>
           </CardHeader>
           <CardContent>
