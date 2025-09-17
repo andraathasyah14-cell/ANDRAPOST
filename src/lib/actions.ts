@@ -70,15 +70,19 @@ export async function updateProfile(prevState:any, formData: FormData) {
     return { success: false, message: 'Validasi data gagal. Periksa kembali semua isian.' };
   }
 
-  try {
-    await db.collection('app-data').doc('profile').update(validatedFields.data);
-    revalidatePath('/');
-    revalidatePath('/admin01');
-    return { success: true, message: 'Profil berhasil diperbarui!' };
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    return { success: false, message: 'Gagal memperbarui profil di database.' };
-  }
+  // try {
+  //   await db.collection('app-data').doc('profile').update(validatedFields.data);
+  //   revalidatePath('/');
+  //   revalidatePath('/admin01');
+  //   return { success: true, message: 'Profil berhasil diperbarui!' };
+  // } catch (error) {
+  //   console.error('Error updating profile:', error);
+  //   return { success: false, message: 'Gagal memperbarui profil di database.' };
+  // }
+  console.log('Profile update called (DB disabled):', validatedFields.data);
+  revalidatePath('/');
+  revalidatePath('/admin01');
+  return { success: true, message: 'Profil berhasil diperbarui! (Simulasi)' };
 }
 
 // --- OPINION UPLOAD ACTION ---
@@ -105,22 +109,27 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
         return { success: false, message: 'Validasi gagal', errors: validatedFields.error.flatten().fieldErrors };
     }
 
-    try {
-        const { imageUrl, ...rest } = validatedFields.data;
-        const newOpinion = {
-            contentType: 'opinion',
-            ...rest,
-            image: { imageUrl },
-        };
-        await db.collection('content').add(newOpinion);
-        revalidatePath('/');
-        revalidatePath('/opini');
-        revalidatePath('/admin01');
-        return { success: true, message: 'Opini berhasil diunggah!', errors: null };
-    } catch (error) {
-        console.error('Error uploading opinion:', error);
-        return { success: false, message: 'Gagal mengunggah opini.', errors: null };
-    }
+    // try {
+    //     const { imageUrl, ...rest } = validatedFields.data;
+    //     const newOpinion = {
+    //         contentType: 'opinion',
+    //         ...rest,
+    //         image: { imageUrl },
+    //     };
+    //     await db.collection('content').add(newOpinion);
+    //     revalidatePath('/');
+    //     revalidatePath('/opini');
+    //     revalidatePath('/admin01');
+    //     return { success: true, message: 'Opini berhasil diunggah!', errors: null };
+    // } catch (error) {
+    //     console.error('Error uploading opinion:', error);
+    //     return { success: false, message: 'Gagal mengunggah opini.', errors: null };
+    // }
+    console.log('Opinion upload called (DB disabled):', validatedFields.data);
+    revalidatePath('/');
+    revalidatePath('/opini');
+    revalidatePath('/admin01');
+    return { success: true, message: 'Opini berhasil diunggah! (Simulasi)', errors: null };
 }
 
 // --- PUBLICATION UPLOAD ACTION ---
@@ -150,24 +159,29 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
         return { success: false, message: 'Validasi gagal.', errors: validatedFields.error.flatten().fieldErrors };
     }
     
-    try {
-        const { imageUrl, ...rest } = validatedFields.data;
-        const newPublication = {
-            contentType: 'publication',
-            ...rest,
-            image: { imageUrl },
-            // In a real app, you might want to generate a viewUrl differently
-            viewUrl: rest.fileUrl 
-        };
-        await db.collection('content').add(newPublication);
-        revalidatePath('/');
-        revalidatePath('/publikasi');
-        revalidatePath('/admin01');
-        return { success: true, message: 'Publikasi berhasil diunggah!', errors: null };
-    } catch (error) {
-        console.error('Error uploading publication:', error);
-        return { success: false, message: 'Gagal mengunggah publikasi.', errors: null };
-    }
+    // try {
+    //     const { imageUrl, ...rest } = validatedFields.data;
+    //     const newPublication = {
+    //         contentType: 'publication',
+    //         ...rest,
+    //         image: { imageUrl },
+    //         // In a real app, you might want to generate a viewUrl differently
+    //         viewUrl: rest.fileUrl 
+    //     };
+    //     await db.collection('content').add(newPublication);
+    //     revalidatePath('/');
+    //     revalidatePath('/publikasi');
+    //     revalidatePath('/admin01');
+    //     return { success: true, message: 'Publikasi berhasil diunggah!', errors: null };
+    // } catch (error) {
+    //     console.error('Error uploading publication:', error);
+    //     return { success: false, message: 'Gagal mengunggah publikasi.', errors: null };
+    // }
+    console.log('Publication upload called (DB disabled):', validatedFields.data);
+    revalidatePath('/');
+    revalidatePath('/publikasi');
+    revalidatePath('/admin01');
+    return { success: true, message: 'Publikasi berhasil diunggah! (Simulasi)', errors: null };
 }
 
 // --- ONGOING RESEARCH UPLOAD ACTION ---
@@ -193,23 +207,28 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
         return { success: false, message: 'Validasi gagal.', errors: validatedFields.error.flatten().fieldErrors };
     }
 
-    try {
-        const { imageUrl, startedOn, ...rest } = validatedFields.data;
-        const newOngoing = {
-            contentType: 'ongoing',
-            ...rest,
-            startedOn: new Date(startedOn),
-            image: { imageUrl },
-        };
-        await db.collection('content').add(newOngoing);
-        revalidatePath('/');
-        revalidatePath('/ongoing');
-        revalidatePath('/admin01');
-        return { success: true, message: 'Riset berhasil diunggah!', errors: null };
-    } catch (error) {
-        console.error('Error uploading ongoing research:', error);
-        return { success: false, message: 'Gagal mengunggah riset.', errors: null };
-    }
+    // try {
+    //     const { imageUrl, startedOn, ...rest } = validatedFields.data;
+    //     const newOngoing = {
+    //         contentType: 'ongoing',
+    //         ...rest,
+    //         startedOn: new Date(startedOn),
+    //         image: { imageUrl },
+    //     };
+    //     await db.collection('content').add(newOngoing);
+    //     revalidatePath('/');
+    //     revalidatePath('/ongoing');
+    //     revalidatePath('/admin01');
+    //     return { success: true, message: 'Riset berhasil diunggah!', errors: null };
+    // } catch (error) {
+    //     console.error('Error uploading ongoing research:', error);
+    //     return { success: false, message: 'Gagal mengunggah riset.', errors: null };
+    // }
+    console.log('Ongoing research upload called (DB disabled):', validatedFields.data);
+    revalidatePath('/');
+    revalidatePath('/ongoing');
+    revalidatePath('/admin01');
+    return { success: true, message: 'Riset berhasil diunggah! (Simulasi)', errors: null };
 }
 
 // --- DELETE CONTENT ACTION ---
@@ -217,20 +236,24 @@ export async function handleDeleteContent(contentId: string) {
   if (!contentId) {
     return { success: false, message: 'ID Konten tidak valid.' };
   }
-  try {
-    await db.collection('content').doc(contentId).delete();
+  // try {
+  //   await db.collection('content').doc(contentId).delete();
 
-    revalidatePath('/admin01');
-    revalidatePath('/');
-    revalidatePath('/opini');
-    revalidatePath('/publikasi');
-    revalidatePath('/ongoing');
+  //   revalidatePath('/admin01');
+  //   revalidatePath('/');
+  //   revalidatePath('/opini');
+  //   revalidatePath('/publikasi');
+  //   revalidatePath('/ongoing');
 
-    return { success: true, message: 'Konten berhasil dihapus.' };
-  } catch (error) {
-    console.error('Error deleting content:', error);
-    return { success: false, message: 'Gagal menghapus konten dari database.' };
-  }
+  //   return { success: true, message: 'Konten berhasil dihapus.' };
+  // } catch (error) {
+  //   console.error('Error deleting content:', error);
+  //   return { success: false, message: 'Gagal menghapus konten dari database.' };
+  // }
+  console.log('Delete content called (DB disabled):', contentId);
+  revalidatePath('/admin01');
+  revalidatePath('/');
+  return { success: true, message: 'Konten berhasil dihapus. (Simulasi)' };
 }
 
 
