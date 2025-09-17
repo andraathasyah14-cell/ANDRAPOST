@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useFormStatus } from 'react-dom';
 import { useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,7 +54,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   
-  const [state, formAction] = useFormState(updateProfile, { success: false, message: '' });
+  const [state, formAction] = useActionState(updateProfile, { success: false, message: '' });
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),

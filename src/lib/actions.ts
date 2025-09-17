@@ -50,7 +50,7 @@ const profileSchema = z.object({
   tools: z.array(toolSchema),
 });
 
-export async function updateProfile(formData: FormData) {
+export async function updateProfile(prevState:any, formData: FormData) {
   try {
     const name = formData.get('name') as string;
     const description = formData.get('description') as string;
