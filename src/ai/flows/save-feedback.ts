@@ -29,8 +29,7 @@ const saveFeedbackFlow = ai.defineFlow(
     outputSchema: z.object({success: z.boolean()}),
   },
   async input => {
-    // Database functionality is temporarily disabled.
-    console.log("Feedback received, saving to database:", input);
+    // Data dari formulir feedback disimpan di koleksi 'feedback' di Cloud Firestore.
     await db.collection('feedback').add({
       ...input,
       createdAt: new Date().toISOString(),
