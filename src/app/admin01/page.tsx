@@ -60,6 +60,7 @@ export default function AdminPage() {
   }, [user, isInitiallyLoading, router]);
 
   // Tampilkan loader jika auth masih diperiksa, atau jika data sedang dimuat, atau jika profil belum ada.
+  // Ini adalah kondisi kunci untuk mencegah "terpental"
   if (isInitiallyLoading || isLoading || !user?.isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
