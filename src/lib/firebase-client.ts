@@ -3,7 +3,6 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
-import { getDatabase } from 'firebase/database';
 
 // Your web app's Firebase configuration from environment variables
 const firebaseConfig = {
@@ -14,6 +13,7 @@ const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
 // Initialize Firebase only if it hasn't been initialized yet
@@ -22,5 +22,4 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize and export Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app); // For Cloud Firestore
-export const rtdb = getDatabase(app); // For Firebase Realtime Database
 export const storage = getStorage(app); // For Cloud Storage

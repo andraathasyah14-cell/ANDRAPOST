@@ -30,11 +30,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-   // Allow server actions to run for longer, which is useful for GenAI operations
-  serverActions: {
-    bodySizeLimit: '2mb',
-    serverActions: true,
-  },
 };
 
 export default nextConfig;
