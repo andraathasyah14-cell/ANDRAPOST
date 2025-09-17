@@ -2,8 +2,8 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { Timestamp } from 'firebase-admin/firestore';
-import { db } from '@/lib/firebase-admin';
+// import { Timestamp } from 'firebase-admin/firestore';
+// import { db } from '@/lib/firebase-admin';
 import { PlaceHolderImages, getImageDetailsById } from './placeholder-images';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
@@ -60,37 +60,11 @@ const profileSchema = z.object({
 
 
 export async function updateProfile(prevState:any, formData: FormData) {
-  try {
-    const toolEntries = formData.getAll('tools');
-    const tools = toolEntries.map((entry: any) => JSON.parse(entry));
-    
-    const validatedFields = profileSchema.safeParse({
-        name: formData.get('name'),
-        description: formData.get('description'),
-        tools: tools,
-    });
-
-    if (!validatedFields.success) {
-        return { success: false, message: 'Data tidak valid. Periksa kembali semua isian.' };
-    }
-    
-    const profileRef = db.collection('profile').doc('user_profile');
-    await profileRef.set(validatedFields.data, { merge: true });
-
-    // Revalidate all relevant paths
-    revalidatePath('/');
-    revalidatePath('/admin01');
-    revalidatePath('/opini');
-    revalidatePath('/publikasi');
-    revalidatePath('/ongoing');
-
-
-    return { success: true, message: 'Profil berhasil diperbarui!' };
-
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    return { success: false, message: 'Gagal memperbarui profil. Terjadi kesalahan server.' };
-  }
+  console.log("Profile update is disabled in this environment.");
+  // Revalidate paths to show potential UI changes even if data isn't saved
+  revalidatePath('/');
+  revalidatePath('/admin01');
+  return { success: true, message: 'Fungsi pembaruan profil dinonaktifkan sementara.' };
 }
 
 // --- OPINION UPLOAD ACTION ---
@@ -105,49 +79,11 @@ const opinionUploadSchema = z.object({
 
 
 export async function handleOpinionUpload(prevState: any, formData: FormData) {
-    const validatedFields = opinionUploadSchema.safeParse({
-        postedOn: formData.get('postedOn'),
-        title: formData.get('title'),
-        tags: formData.getAll('tags'),
-        content: formData.get('content'),
-        image: formData.get('image'),
-    });
-
-    if (!validatedFields.success) {
-        return {
-            success: false,
-            message: 'Validasi gagal. Periksa kembali semua isian.',
-            errors: validatedFields.error.flatten().fieldErrors,
-        };
-    }
-    
-    try {
-        const imageDetails = getImageDetailsById(validatedFields.data.image);
-        if (!imageDetails) {
-            return {
-                success: false, message: "ID Gambar tidak valid.",
-                errors: { image: ['Pilih gambar yang valid dari daftar.'] }
-            };
-        }
-
-        const newOpinion = {
-            contentType: 'opinion',
-            ...validatedFields.data,
-            image: imageDetails,
-        };
-        
-        await db.collection('content').add(newOpinion);
-
-        revalidatePath('/');
-        revalidatePath('/opini');
-        revalidatePath('/admin01');
-        
-        return { success: true, message: 'Opini berhasil ditambahkan!', errors: null };
-
-    } catch (error) {
-        console.error('Error uploading opinion:', error);
-        return { success: false, message: 'Gagal menambahkan opini karena kesalahan server.', errors: null };
-    }
+    console.log("Opinion upload is disabled in this environment.");
+    revalidatePath('/');
+    revalidatePath('/opini');
+    revalidatePath('/admin01');
+    return { success: true, message: 'Fungsi unggah opini dinonaktifkan sementara.', errors: null };
 }
 
 // --- PUBLICATION UPLOAD ACTION ---
@@ -163,51 +99,11 @@ const publicationUploadSchema = z.object({
 });
 
 export async function handlePublicationUpload(prevState: any, formData: FormData) {
-    const validatedFields = publicationUploadSchema.safeParse({
-        publishedOn: formData.get('publishedOn'),
-        title: formData.get('title'),
-        tags: formData.getAll('tags'),
-        description: formData.get('description'),
-        fileUrl: formData.get('fileUrl'),
-        status: formData.get('status'),
-        image: formData.get('image'),
-    });
-
-    if (!validatedFields.success) {
-        return {
-            success: false, message: 'Validasi gagal. Periksa kembali semua isian.',
-            errors: validatedFields.error.flatten().fieldErrors,
-        };
-    }
-    
-    try {
-        const imageDetails = getImageDetailsById(validatedFields.data.image);
-        if (!imageDetails) {
-            return {
-                success: false, message: "ID Gambar tidak valid.",
-                errors: { image: ['Pilih gambar yang valid dari daftar.'] }
-            };
-        }
-
-        const newPublication = { 
-            contentType: 'publication',
-            ...validatedFields.data, 
-            image: imageDetails,
-            viewUrl: "#" 
-        };
-        
-        await db.collection('content').add(newPublication);
-
-        revalidatePath('/');
-        revalidatePath('/publikasi');
-        revalidatePath('/admin01');
-        
-        return { success: true, message: 'Publikasi berhasil ditambahkan!', errors: null };
-
-    } catch (error) {
-        console.error('Error uploading publication:', error);
-        return { success: false, message: 'Gagal menambahkan publikasi karena kesalahan server.', errors: null };
-    }
+    console.log("Publication upload is disabled in this environment.");
+    revalidatePath('/');
+    revalidatePath('/publikasi');
+    revalidatePath('/admin01');
+    return { success: true, message: 'Fungsi unggah publikasi dinonaktifkan sementara.', errors: null };
 }
 
 // --- ONGOING RESEARCH UPLOAD ACTION ---
@@ -221,49 +117,11 @@ const ongoingUploadSchema = z.object({
 });
 
 export async function handleOngoingUpload(prevState: any, formData: FormData) {
-    const validatedFields = ongoingUploadSchema.safeParse({
-        startedOn: formData.get('startedOn'),
-        title: formData.get('title'),
-        tags: formData.getAll('tags'),
-        description: formData.get('description'),
-        image: formData.get('image'),
-    });
-
-    if (!validatedFields.success) {
-        return {
-            success: false, message: 'Validasi gagal. Periksa kembali semua isian.',
-            errors: validatedFields.error.flatten().fieldErrors,
-        };
-    }
-    
-    try {
-        const imageDetails = getImageDetailsById(validatedFields.data.image);
-        if (!imageDetails) {
-             return {
-                success: false, message: "ID Gambar tidak valid.",
-                errors: { image: ['Pilih gambar yang valid dari daftar.'] }
-            };
-        }
-        
-        const newOngoing = {
-            contentType: 'ongoing',
-            ...validatedFields.data,
-            image: imageDetails,
-            startedOn: Timestamp.fromDate(new Date(validatedFields.data.startedOn)),
-        };
-
-        await db.collection('content').add(newOngoing);
-
-        revalidatePath('/');
-        revalidatePath('/ongoing');
-        revalidatePath('/admin01');
-        
-        return { success: true, message: 'Riset ongoing berhasil ditambahkan!', errors: null };
-
-    } catch (error) {
-        console.error('Error uploading ongoing research:', error);
-        return { success: false, message: 'Gagal menambahkan riset karena kesalahan server.', errors: null };
-    }
+    console.log("Ongoing research upload is disabled in this environment.");
+    revalidatePath('/');
+    revalidatePath('/ongoing');
+    revalidatePath('/admin01');
+    return { success: true, message: 'Fungsi unggah riset dinonaktifkan sementara.', errors: null };
 }
 
 
