@@ -24,6 +24,7 @@ const db = getFirestore();
 
 
 // --- AUTH HELPER ---
+import { cookies } from 'next/headers';
 async function verifyAuth() {
   const sessionCookie = cookies().get('__session')?.value;
   if (!sessionCookie) {
@@ -36,7 +37,6 @@ async function verifyAuth() {
 
 // --- LOGIN ACTION ---
 // This has been simplified and does not use Firebase Auth anymore.
-import { cookies } from 'next/headers';
 
 const loginSchema = z.object({
   code: z.string().min(1, "Kode akses harus diisi."),

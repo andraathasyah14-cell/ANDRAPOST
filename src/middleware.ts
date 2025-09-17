@@ -6,8 +6,17 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('__session')?.value;
   const { pathname } = request.nextUrl;
 
-  // The session secret from environment variables
+  // This check is now required.
   const sessionSecret = process.env.ADMIN_SESSION_SECRET;
+  if (!sessionSecret) {
+      console.error("FATAL: ADMIN_SESSION_SECRET is not set in .env. Middleware cannot run securely.");
+      // In production, you might want to return an error page.
+      // For now, we'll block access to admin to be safe.
+      if (pathname.startsWith('/admin01')) {
+          return NextResponse.redirect(new URL('/login?error=config_error', request.url));
+      }
+      return NextResponse.next();
+  }
 
   // Check if the session cookie is valid
   const isSessionValid = sessionCookie === sessionSecret;
