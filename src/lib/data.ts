@@ -91,8 +91,8 @@ export async function getProfile(): Promise<Profile> {
     const doc = await db.collection('app-data').doc('profile').get();
     if (!doc.exists) {
       // If profile doesn't exist in Firestore, create it from default
+      console.log('Profile document not found, creating from default.');
       await db.collection('app-data').doc('profile').set(defaultProfile);
-      console.log('Profile document created from default.');
       return defaultProfile;
     }
     return doc.data() as Profile;
