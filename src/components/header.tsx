@@ -14,17 +14,22 @@ import { cn } from '@/lib/utils';
 import Logo from './logo';
 import { ThemeToggle } from './theme-toggle';
 import { navLinks } from './main-nav';
-import { useAuth } from './auth-provider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-
+import { usePathname } from 'next/navigation';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { user, isInitiallyLoading } = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    // Check for cookie on mount and on path change
+    setIsAuthenticated(Cookies.get('__session') === 'true');
+  }, [pathname]);
 
 
   const handleScroll = useCallback(() => {
@@ -48,15 +53,13 @@ export default function Header() {
 
   const onLogout = () => {
     Cookies.remove('__session', { path: '/' });
-    router.push('/');
+    setIsAuthenticated(false);
+    router.push('/login');
     router.refresh();
   };
   
   const AuthButton = () => {
-    if (isInitiallyLoading) {
-      return <div className="h-9 w-24 rounded-md animate-pulse bg-muted"></div>
-    }
-    if(user?.isAdmin) {
+    if (isAuthenticated) {
       return (
         <div className="flex items-center gap-2">
           <Button asChild>

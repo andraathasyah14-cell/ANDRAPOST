@@ -8,6 +8,7 @@ import { saveFeedback } from '@/ai/flows/save-feedback';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage as getAdminStorage } from 'firebase-admin/storage';
+import { cookies } from 'next/headers';
 
 
 // --- FIREBASE ADMIN INITIALIZATION (SERVER-SIDE) ---
@@ -22,16 +23,12 @@ const db = getFirestore();
 
 
 // --- AUTH HELPER ---
-import { cookies } from 'next/headers';
 async function verifyAuth() {
   const sessionCookie = cookies().get('__session')?.value;
-  if (!sessionCookie) {
-    throw new Error('Unauthorized: No session cookie found.');
-  }
-   if (sessionCookie !== process.env.ADMIN_SESSION_SECRET) {
-    throw new Error('Unauthorized: Invalid session secret.');
-  }
   // This is a simplified check. In a real-world scenario, you'd verify a JWT or session token.
+  if (sessionCookie !== 'true') {
+     throw new Error('Unauthorized: Not logged in.');
+  }
 }
 
 // --- LOGIN ACTION ---
@@ -49,26 +46,15 @@ export async function handleLogin(prevState: any, formData: FormData) {
         return { success: false, message: 'Validasi gagal.', errors: validatedFields.error.flatten().fieldErrors };
     }
     
-    if (validatedFields.data.code !== process.env.ADMIN_ACCESS_CODE) {
+    // The access code is now `090107`
+    if (validatedFields.data.code !== '090107') {
         return { success: false, message: 'Kode akses salah.', errors: null };
     }
 
-    // On successful validation, we set a temporary cookie that the client can read.
-    // The client-side code will then set its own long-term cookie.
-    cookies().set('auth_success', 'true', { maxAge: 10 });
-
-
-    return { success: true, message: 'Validasi berhasil!', errors: null };
+    // On successful validation, just return success. 
+    // The client will handle cookie setting and redirection.
+    return { success: true, message: 'Login Berhasil!', errors: null };
 }
-
-// --- LOGOUT ACTION ---
-// This server action is now primarily for revalidation, cookie is cleared client-side.
-export async function handleLogout() {
-    cookies().delete('__session');
-    revalidatePath('/');
-    revalidatePath('/admin01');
-}
-
 
 // --- CATEGORIZE ACTION ---
 

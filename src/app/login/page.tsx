@@ -8,12 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, LogIn } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/logo';
 import { handleLogin } from '@/lib/actions';
 import Cookies from 'js-cookie';
-import { useAuth } from '@/components/auth-provider';
 
 const initialState = {
     success: false,
@@ -37,52 +36,34 @@ function SubmitButton() {
 
 
 export default function LoginPage() {
-  const { user, isInitiallyLoading } = useAuth();
   const [state, formAction] = useActionState(handleLogin, initialState);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
 
+  // Redirect if already logged in
   useEffect(() => {
-    if (isInitiallyLoading) {
-      return; // Wait until auth state is confirmed
-    }
-
-    // 1. If user is already authenticated (e.g., from a previous session), redirect them.
-    if (user?.isAdmin) {
+    if (Cookies.get('__session') === 'true') {
       router.replace('/admin01');
-      return;
     }
+  }, [router]);
 
-    // 2. Handle the result of the login form submission.
+  // Handle form submission result
+  useEffect(() => {
     if (state.success) {
-      // Set the session cookie. The AuthProvider will detect this change and update the user state.
+      // Set cookie on success and redirect
       Cookies.set('__session', 'true', { expires: 5, path: '/' }); 
-      
-      // Now redirect.
-      const redirectUrl = searchParams.get('redirect') || '/admin01';
-      router.push(redirectUrl);
-      router.refresh(); // Crucial to update server-recognized state and re-render header, etc.
-    } else if (state.message) {
-      // 3. If there's an error message from the server, show it.
+      router.push('/admin01');
+      router.refresh(); 
+    } else if (state.message && !state.success) {
+      // Show error toast on failure
       toast({
         title: 'Login Gagal',
         description: state.message,
         variant: 'destructive',
       });
     }
-  }, [state, user, isInitiallyLoading, router, searchParams, toast]);
+  }, [state, router, toast]);
   
-
-  // Show a loading state or nothing until auth is checked
-  if (isInitiallyLoading || user) {
-     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
@@ -95,7 +76,7 @@ export default function LoginPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Login Admin</CardTitle>
-            <CardDescription>Masukkan kode akses untuk masuk ke panel admin.</CardDescription>
+            <CardDescription>Masukkan kode akses 090107 untuk masuk ke panel admin.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={formAction} className="space-y-4">

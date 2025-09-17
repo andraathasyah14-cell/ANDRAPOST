@@ -1,17 +1,15 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
+import { Loader2 } from 'lucide-react';
 import ProfileForm from '@/components/admin/profile-form';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BrainCircuit, Loader2 } from 'lucide-react';
+import { ArrowLeft, BrainCircuit } from 'lucide-react';
 import Logo from '@/components/logo';
 import { getAllContent, getProfile, type OpinionContent, type PublicationContent, type OngoingContent, type Profile } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,28 +18,21 @@ import PublicationForm from '@/components/admin/publication-form';
 import OngoingForm from '@/components/admin/ongoing-form';
 import { handleOpinionUpload, handlePublicationUpload, handleOngoingUpload } from '@/lib/actions';
 import ContentList from '@/components/admin/content-list';
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/components/auth-provider';
-import { useRouter } from 'next/navigation';
 
 type ContentPost = OpinionContent | PublicationContent | OngoingContent;
 
 export default function AdminPage() {
-  const { user, isInitiallyLoading } = useAuth();
   const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [allContent, setAllContent] = useState<ContentPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  useEffect(() => {
-    // Jangan lakukan apa pun sampai status auth awal selesai diperiksa.
-    if (isInitiallyLoading) {
-      return;
-    }
 
-    // Setelah status auth diketahui, periksa apakah pengguna adalah admin.
-    if (user?.isAdmin) {
-      // Jika ya, muat data yang diperlukan untuk panel admin.
+  useEffect(() => {
+    // Direct check for the session cookie.
+    const session = Cookies.get('__session');
+    if (session === 'true') {
+      setIsAuthenticated(true);
       const fetchData = async () => {
         setIsLoading(true);
         const [profileData, contentData] = await Promise.all([
@@ -54,30 +45,18 @@ export default function AdminPage() {
       };
       fetchData();
     } else {
-      // Jika tidak, arahkan pengguna ke halaman login.
+      // If no session, redirect to login immediately.
       router.replace('/login');
     }
-  }, [user, isInitiallyLoading, router]);
+  }, [router]);
 
-  // Tampilkan loader jika auth masih diperiksa, atau jika data sedang dimuat, atau jika profil belum ada.
-  // Ini adalah kondisi kunci untuk mencegah "terpental"
-  if (isInitiallyLoading || isLoading || !user?.isAdmin) {
+  if (!isAuthenticated || isLoading || !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
-  
-  // Jika profil masih null setelah loading selesai (kasus langka), tampilkan loader juga.
-  if (!profile) {
-     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
 
   const profileData = {
     name: profile.name,
