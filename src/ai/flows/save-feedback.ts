@@ -8,7 +8,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { db } from '@/lib/firebase-admin'; // Impor instance db yang sudah diinisialisasi
+import { getFirestore } from 'firebase-admin/firestore';
 
 const SaveFeedbackInputSchema = z.object({
   name: z.string().describe('The name of the person giving feedback.'),
@@ -29,7 +29,7 @@ const saveFeedbackFlow = ai.defineFlow(
     outputSchema: z.object({success: z.boolean()}),
   },
   async input => {
-    // getFirestore() tidak lagi diperlukan, langsung gunakan `db`
+    const db = getFirestore();
     await db.collection('feedback').add({
       ...input,
       createdAt: new Date().toISOString(),

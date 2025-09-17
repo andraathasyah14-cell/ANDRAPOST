@@ -1,7 +1,7 @@
 'use server';
 import 'server-only';
 import { Timestamp } from 'firebase-admin/firestore';
-import { db } from '@/lib/firebase-admin'; // Impor instance db yang sudah diinisialisasi
+import { getFirestore } from 'firebase-admin/firestore';
 
 // --- Data Type Definitions ---
 
@@ -72,6 +72,7 @@ export type ContentPost = OpinionContent | PublicationContent | OngoingContent;
 
 async function getDocumentData<T>(collectionName: string, docId: string): Promise<T | null> {
   try {
+    const db = getFirestore();
     const docRef = db.collection(collectionName).doc(docId);
     const docSnap = await docRef.get();
     if (docSnap.exists) {
@@ -100,6 +101,7 @@ export async function getProfile(): Promise<Profile> {
 
 export async function getAllContent(): Promise<ContentPost[]> {
   try {
+    const db = getFirestore();
     const snapshot = await db.collection('content').get();
     if (snapshot.empty) {
       return [];
