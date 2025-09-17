@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import Logo from './logo';
-import MainNav from './main-nav';
 import { ThemeToggle } from './theme-toggle';
 import { navLinks } from './main-nav';
 
@@ -28,7 +27,7 @@ export default function Header() {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
-  
+
   const handleLinkClick = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -65,11 +64,11 @@ export default function Header() {
                 </SheetHeader>
                 <div className="mt-8">
                   <ul className="flex flex-col space-y-2">
-                     {navLinks.map((link) => (
+                    {navLinks.map((link) => (
                       <li key={link.id}>
                         <button
                           onClick={() => handleLinkClick(link.id)}
-                          className='flex items-center w-full p-3 rounded-md text-base font-medium text-foreground/80 hover:bg-accent hover:text-accent-foreground'
+                          className="flex items-center w-full p-3 rounded-md text-base font-medium text-foreground/80 hover:bg-accent hover:text-accent-foreground"
                         >
                           <link.icon className="mr-3 h-5 w-5" />
                           {link.label}
