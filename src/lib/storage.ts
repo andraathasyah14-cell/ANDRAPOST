@@ -9,7 +9,6 @@ import {
   type UploadTaskSnapshot,
 } from 'firebase/storage';
 import { storage as firebaseStorage } from '@/lib/firebase-client';
-import { randomUUID } from 'crypto';
 
 export type UploadProgress = {
   percentage: number;
@@ -26,7 +25,7 @@ function createUploadTask(
     if (!firebaseStorage) {
         return reject(new Error("Firebase Storage is not initialized. Check your client config."));
     }
-    const fileId = randomUUID();
+    const fileId = window.crypto.randomUUID();
     const storageRef = ref(firebaseStorage, `uploads/${fileId}-${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
