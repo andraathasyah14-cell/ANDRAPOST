@@ -1,4 +1,3 @@
-
 // src/lib/firebase-admin.ts
 import admin from 'firebase-admin';
 
@@ -29,30 +28,25 @@ export function initializeFirebaseAdmin(): FirebaseAdmin | null {
   if (global.__firebase_admin_sdk) {
     return global.__firebase_admin_sdk;
   }
-
-  // When running in a Google Cloud environment (like Firebase Studio or App Hosting),
-  // the SDK can automatically detect the service account credentials.
+  
   try {
-    const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!serviceAccountString) {
-      console.warn('FIREBASE_SERVICE_ACCOUNT_KEY is not set. Firebase Admin initialization skipped.');
-      global.__firebase_admin_sdk = null;
-      return null;
-    }
-    
-    let serviceAccount;
-    try {
-        serviceAccount = JSON.parse(serviceAccountString);
-    } catch(e) {
-        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it is a valid JSON string.');
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    if (!projectId || !clientEmail || !privateKey) {
+        console.warn('Firebase Admin credentials (project_id, client_email, private_key) are not fully set in environment variables. Firebase Admin initialization skipped.');
         global.__firebase_admin_sdk = null;
         return null;
     }
-
-
+    
     if (!admin.apps.length) {
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
         storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
       });
       console.log('Firebase Admin SDK initialized successfully.');
