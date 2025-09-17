@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { BookOpen, MessageSquare, PlusCircle, Trash2, Loader2, Upload, Camera } from 'lucide-react';
+import { BookOpen, MessageSquare, PlusCircle, Trash2, Loader2, Camera } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { updateProfile } from '@/lib/actions';
