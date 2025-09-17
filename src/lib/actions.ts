@@ -3,8 +3,6 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/mysql'; // Switch to MySQL
-import type { ResultSetHeader } from 'mysql2';
 import { admin, initializeFirebaseAdmin } from '@/lib/firebase-admin';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
@@ -40,7 +38,6 @@ export async function handleLogin(prevState: any, formData: FormData) {
         return { success: false, message: 'Kode akses salah.', errors: null };
     }
 
-    // If code is correct, set the session cookie
     const sessionSecret = process.env.ADMIN_SESSION_SECRET;
     if (!sessionSecret) {
         console.error("ADMIN_SESSION_SECRET is not set in .env");
@@ -54,7 +51,7 @@ export async function handleLogin(prevState: any, formData: FormData) {
         path: '/',
     });
     
-    revalidatePath('/'); // Revalidate to update header state
+    revalidatePath('/');
     return { success: true, message: 'Login Berhasil!', errors: null };
 }
 
@@ -144,7 +141,7 @@ export async function handleCategorize(prevState: any, formData: FormData) {
   }
 }
 
-// --- PROFILE UPDATE ACTION (Migrated to MySQL) ---
+// --- PROFILE UPDATE ACTION (Migrated to Firestore) ---
 
 const toolSchema = z.object({
   name: z.string().min(1, 'Nama perkakas harus diisi'),
@@ -160,8 +157,9 @@ const profileSchema = z.object({
 
 
 export async function updateProfile(prevState:any, formData: FormData) {
-  await verifyAuth(); // Secure this action
-  if (!db) {
+  await verifyAuth();
+  const firebase = initializeFirebaseAdmin();
+  if (!firebase || !firebase.db) {
     return { success: false, message: 'Database tidak tersedia. Gagal memperbarui profil.' };
   }
   const validatedFields = profileSchema.safeParse({
@@ -175,38 +173,27 @@ export async function updateProfile(prevState:any, formData: FormData) {
     return { success: false, message: 'Validasi data gagal. Periksa kembali semua isian.' };
   }
 
-  const connection = await db.getConnection();
   try {
-    await connection.beginTransaction();
-
     const { name, description, imageUrl, tools } = validatedFields.data;
     
-    // Update profile table
-    await connection.query(
-      'UPDATE profile SET name = ?, description = ?, image_url = ? WHERE id = 1',
-      [name, description, imageUrl || null]
-    );
+    // In Firestore, we update a specific document. Let's say 'main' in the 'profile' collection.
+    await firebase.db.collection('profile').doc('main').set({
+      name,
+      description,
+      imageUrl: imageUrl || null,
+      tools: tools.map(tool => ({ name: tool.name, imageUrl: tool.imageUrl })), // Ensure clean data
+    }, { merge: true }); // Merge true to avoid overwriting fields not in the form
 
-    // Replace tools
-    await connection.query('DELETE FROM tools');
-    for (const tool of tools) {
-        await connection.query('INSERT INTO tools (name, image_url) VALUES (?, ?)', [tool.name, tool.imageUrl]);
-    }
-
-    await connection.commit();
     revalidatePath('/');
     revalidatePath('/admin01');
     return { success: true, message: 'Profil berhasil diperbarui!' };
   } catch (error) {
-    await connection.rollback();
-    console.error('Error updating profile in MySQL:', error);
+    console.error('Error updating profile in Firestore:', error);
     return { success: false, message: 'Gagal memperbarui profil di database.' };
-  } finally {
-      connection.release();
   }
 }
 
-// --- OPINION UPLOAD ACTION (Migrated to MySQL) ---
+// --- OPINION UPLOAD ACTION (Migrated to Firestore) ---
 
 const opinionUploadSchema = z.object({
     postedOn: z.string().min(1, "Waktu harus diisi"),
@@ -218,8 +205,9 @@ const opinionUploadSchema = z.object({
 
 
 export async function handleOpinionUpload(prevState: any, formData: FormData) {
-    await verifyAuth(); // Secure this action
-    if (!db) {
+    await verifyAuth();
+    const firebase = initializeFirebaseAdmin();
+    if (!firebase || !firebase.db) {
       return { success: false, message: 'Database tidak tersedia. Gagal mengunggah opini.', errors: null };
     }
     const validatedFields = opinionUploadSchema.safeParse({
@@ -236,22 +224,28 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
 
     try {
         const { title, tags, content, imageUrl, postedOn } = validatedFields.data;
-        const sql = `INSERT INTO content (content_type, title, tags, content, image_url, posted_on) VALUES (?, ?, ?, ?, ?, ?)`;
-        const values = ['opinion', title, JSON.stringify(tags), content, imageUrl, postedOn];
         
-        await db.query(sql, values);
+        await firebase.db.collection('content').add({
+          contentType: 'opinion',
+          title,
+          tags,
+          content,
+          imageUrl,
+          postedOn,
+          createdAt: new Date().toISOString(), // Add a timestamp for sorting
+        });
 
         revalidatePath('/');
         revalidatePath('/opini');
         revalidatePath('/admin01');
         return { success: true, message: 'Opini berhasil diunggah!', errors: null };
     } catch (error) {
-        console.error('Error uploading opinion to MySQL:', error);
+        console.error('Error uploading opinion to Firestore:', error);
         return { success: false, message: 'Gagal mengunggah opini.', errors: null };
     }
 }
 
-// --- PUBLICATION UPLOAD ACTION (Migrated to MySQL) ---
+// --- PUBLICATION UPLOAD ACTION (Migrated to Firestore) ---
 
 const publicationUploadSchema = z.object({
     publishedOn: z.string().min(1, "Waktu harus diisi"),
@@ -264,8 +258,9 @@ const publicationUploadSchema = z.object({
 });
 
 export async function handlePublicationUpload(prevState: any, formData: FormData) {
-    await verifyAuth(); // Secure this action
-    if (!db) {
+    await verifyAuth();
+    const firebase = initializeFirebaseAdmin();
+    if (!firebase || !firebase.db) {
       return { success: false, message: 'Database tidak tersedia. Gagal mengunggah publikasi.', errors: null };
     }
     const validatedFields = publicationUploadSchema.safeParse({
@@ -284,25 +279,32 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
     
     try {
         const { title, tags, description, fileUrl, status, imageUrl, publishedOn } = validatedFields.data;
-        // In a real app, you might want to generate a viewUrl differently
-        const viewUrl = fileUrl; 
+        const viewUrl = fileUrl; // For now, viewUrl is the same as fileUrl.
         
-        const sql = `INSERT INTO content (content_type, title, tags, description, file_url, view_url, status, image_url, published_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const values = ['publication', title, JSON.stringify(tags), description, fileUrl, viewUrl, status, imageUrl, publishedOn];
-
-        await db.query(sql, values);
+        await firebase.db.collection('content').add({
+          contentType: 'publication',
+          title,
+          tags,
+          description,
+          fileUrl,
+          viewUrl,
+          status,
+          imageUrl,
+          publishedOn,
+          createdAt: new Date().toISOString(),
+        });
 
         revalidatePath('/');
         revalidatePath('/publikasi');
         revalidatePath('/admin01');
         return { success: true, message: 'Publikasi berhasil diunggah!', errors: null };
     } catch (error) {
-        console.error('Error uploading publication to MySQL:', error);
+        console.error('Error uploading publication to Firestore:', error);
         return { success: false, message: 'Gagal mengunggah publikasi.', errors: null };
     }
 }
 
-// --- ONGOING RESEARCH UPLOAD ACTION (Migrated to MySQL) ---
+// --- ONGOING RESEARCH UPLOAD ACTION (Migrated to Firestore) ---
 
 const ongoingUploadSchema = z.object({
     startedOn: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Format tanggal tidak valid." }),
@@ -313,8 +315,9 @@ const ongoingUploadSchema = z.object({
 });
 
 export async function handleOngoingUpload(prevState: any, formData: FormData) {
-    await verifyAuth(); // Secure this action
-    if (!db) {
+    await verifyAuth();
+    const firebase = initializeFirebaseAdmin();
+    if (!firebase || !firebase.db) {
       return { success: false, message: 'Database tidak tersedia. Gagal mengunggah riset.', errors: null };
     }
     const validatedFields = ongoingUploadSchema.safeParse({
@@ -332,33 +335,38 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
     try {
         const { title, tags, description, imageUrl, startedOn } = validatedFields.data;
 
-        const sql = `INSERT INTO content (content_type, title, tags, description, image_url, started_on) VALUES (?, ?, ?, ?, ?, ?)`;
-        const values = ['ongoing', title, JSON.stringify(tags), description, imageUrl, new Date(startedOn)];
-
-        await db.query(sql, values);
+        await firebase.db.collection('content').add({
+          contentType: 'ongoing',
+          title,
+          tags,
+          description,
+          imageUrl,
+          startedOn: new Date(startedOn),
+          createdAt: new Date().toISOString(),
+        });
 
         revalidatePath('/');
         revalidatePath('/ongoing');
         revalidatePath('/admin01');
         return { success: true, message: 'Riset berhasil diunggah!', errors: null };
     } catch (error) {
-        console.error('Error uploading ongoing research to MySQL:', error);
+        console.error('Error uploading ongoing research to Firestore:', error);
         return { success: false, message: 'Gagal mengunggah riset.', errors: null };
     }
 }
 
-// --- DELETE CONTENT ACTION (Migrated to MySQL) ---
-export async function handleDeleteContent(contentId: number | string) {
-  await verifyAuth(); // Secure this action
-  if (!db) {
+// --- DELETE CONTENT ACTION (Migrated to Firestore) ---
+export async function handleDeleteContent(contentId: string) {
+  await verifyAuth();
+  const firebase = initializeFirebaseAdmin();
+  if (!firebase || !firebase.db) {
     return { success: false, message: 'Database tidak tersedia. Gagal menghapus konten.' };
   }
-  const id = Number(contentId);
-  if (isNaN(id) || id <= 0) {
+  if (!contentId || typeof contentId !== 'string') {
     return { success: false, message: 'ID Konten tidak valid.' };
   }
   try {
-    await db.query('DELETE FROM content WHERE id = ?', [id]);
+    await firebase.db.collection('content').doc(contentId).delete();
 
     revalidatePath('/admin01');
     revalidatePath('/');
@@ -368,15 +376,13 @@ export async function handleDeleteContent(contentId: number | string) {
 
     return { success: true, message: 'Konten berhasil dihapus.' };
   } catch (error) {
-    console.error('Error deleting content from MySQL:', error);
+    console.error('Error deleting content from Firestore:', error);
     return { success: false, message: 'Gagal menghapus konten dari database.' };
   }
 }
 
 
-// --- FEEDBACK SUBMIT ACTION (Flow remains the same, but flow now writes to Firestore) ---
-// Note: The `saveFeedback` flow still writes to Firestore.
-// It can be migrated separately if needed.
+// --- FEEDBACK SUBMIT ACTION (Flow remains the same, it writes to Firestore) ---
 
 const feedbackSchema = z.object({
   name: z.string().min(1, 'Nama harus diisi.'),
@@ -399,8 +405,6 @@ export async function handleFeedbackSubmit(prevState: any, formData: FormData) {
   }
 
   try {
-    // The underlying AI flow still points to Firestore.
-    // This is a separate concern from the main content data migration.
     const {success} = await saveFeedback(validatedFields.data);
     if (!success) {
         return {

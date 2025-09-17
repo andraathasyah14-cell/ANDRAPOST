@@ -1,8 +1,7 @@
 
 'use server';
 import 'server-only';
-import { db } from '@/lib/mysql';
-import type { RowDataPacket, ResultSetHeader } from 'mysql2';
+import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
 
 // --- Data Type Definitions ---
 
@@ -24,7 +23,7 @@ export interface ImageDetails {
 }
 
 export interface Tool {
-  id?: number;
+  id?: string; // Firestore uses string IDs
   name: string;
   imageUrl: string;
 }
@@ -40,7 +39,7 @@ export type ContentType = 'opinion' | 'publication' | 'ongoing';
 
 // Base interface for all content
 export interface ContentBase {
-  id: number;
+  id: string; // Firestore uses string IDs
   contentType: ContentType;
   title: string;
   tags: Tag[];
@@ -78,11 +77,11 @@ const defaultProfile: Profile = {
   name: "Diandra Athasyah Subagja",
   description: "Independent researcher and analyst on technology, government, corporate, and community topics, from domestic to international.",
   tools: [
-    { name: "Stata", imageUrl: "/tool-logos/stata.svg" },
-    { name: "MySQL", imageUrl: "/tool-logos/mysql.svg" },
-    { name: "Jupyter", imageUrl: "/tool-logos/jupyter.svg" },
-    { name: "Anaconda", imageUrl: "/tool-logos/anaconda.svg" },
-    { name: "AWS", imageUrl: "/tool-logos/aws.svg" },
+    { id: '1', name: "Stata", imageUrl: "/tool-logos/stata.svg" },
+    { id: '2', name: "MySQL", imageUrl: "/tool-logos/mysql.svg" },
+    { id: '3', name: "Jupyter", imageUrl: "/tool-logos/jupyter.svg" },
+    { id: '4', name: "Anaconda", imageUrl: "/tool-logos/anaconda.svg" },
+    { id: '5', name: "AWS", imageUrl: "/tool-logos/aws.svg" },
   ],
   imageUrl: "https://picsum.photos/seed/profile/400/400",
 };
@@ -91,97 +90,82 @@ const defaultProfile: Profile = {
 // --- Main Data Fetching Functions ---
 
 export async function getProfile(): Promise<Profile> {
-  if (!db) {
-    console.warn('MySQL is not available, returning default profile.');
+  const firebase = initializeFirebaseAdmin();
+  if (!firebase || !firebase.db) {
+    console.warn('Firestore is not available, returning default profile.');
     return defaultProfile;
   }
   try {
-    const [profileRows] = await db.query<RowDataPacket[]>(
-        `SELECT name, description, image_url as imageUrl FROM profile WHERE id = 1`
-    );
+    const profileDoc = await firebase.db.collection('profile').doc('main').get();
     
-    if (profileRows.length === 0) {
-      console.warn("Profile not found in database, returning default.");
+    if (!profileDoc.exists) {
+      console.warn("Profile document not found in Firestore, returning default.");
+      // Optional: Create the default profile if it doesn't exist
+      await firebase.db.collection('profile').doc('main').set(defaultProfile);
       return defaultProfile;
     }
 
-    const [toolRows] = await db.query<RowDataPacket[]>(
-        `SELECT name, image_url as imageUrl FROM tools`
-    );
+    return profileDoc.data() as Profile;
 
-    return {
-        name: profileRows[0].name,
-        description: profileRows[0].description,
-        imageUrl: profileRows[0].imageUrl,
-        tools: toolRows as Tool[],
-    };
   } catch (error) {
-    console.error('Error fetching profile from MySQL, returning default profile:', error);
+    console.error('Error fetching profile from Firestore, returning default profile:', error);
     return defaultProfile;
   }
 }
 
 export async function getAllContent(): Promise<ContentPost[]> {
-  if (!db) {
-    console.warn('MySQL is not available, returning empty content array.');
+  const firebase = initializeFirebaseAdmin();
+  if (!firebase || !firebase.db) {
+    console.warn('Firestore is not available, returning empty content array.');
     return [];
   }
   try {
-    const [rows] = await db.query<RowDataPacket[]>(`
-      SELECT 
-        id, 
-        content_type as contentType, 
-        title, 
-        tags, 
-        image_url as imageUrl,
-        posted_on as postedOn,
-        content,
-        published_on as publishedOn,
-        status,
-        file_url as fileUrl,
-        view_url as viewUrl,
-        description,
-        started_on as startedOn
-      FROM content
-    `);
+    const contentSnapshot = await firebase.db.collection('content').get();
 
-    return rows.map(row => {
-        const base = {
-            id: row.id,
-            contentType: row.contentType,
-            title: row.title,
-            tags: JSON.parse(row.tags), // Assuming tags are stored as a JSON string array
-            image: { imageUrl: row.imageUrl },
-        };
-        if (row.contentType === 'opinion') {
-            return {
-                ...base,
-                postedOn: row.postedOn,
-                content: row.content
-            } as OpinionContent;
-        }
-        if (row.contentType === 'publication') {
-            return {
-                ...base,
-                publishedOn: row.publishedOn,
-                status: row.status,
-                fileUrl: row.fileUrl,
-                viewUrl: row.viewUrl,
-                description: row.description
-            } as PublicationContent;
-        }
-        if (row.contentType === 'ongoing') {
-            return {
-                ...base,
-                startedOn: new Date(row.startedOn),
-                description: row.description
-            } as OngoingContent;
-        }
-        return null;
+    if (contentSnapshot.empty) {
+      return [];
+    }
+
+    return contentSnapshot.docs.map(doc => {
+      const data = doc.data();
+      const base = {
+        id: doc.id,
+        contentType: data.contentType,
+        title: data.title,
+        tags: data.tags || [],
+        image: { imageUrl: data.imageUrl },
+      };
+
+      if (data.contentType === 'opinion') {
+        return {
+          ...base,
+          postedOn: data.postedOn,
+          content: data.content
+        } as OpinionContent;
+      }
+      if (data.contentType === 'publication') {
+        return {
+          ...base,
+          publishedOn: data.publishedOn,
+          status: data.status,
+          fileUrl: data.fileUrl,
+          viewUrl: data.viewUrl,
+          description: data.description
+        } as PublicationContent;
+      }
+      if (data.contentType === 'ongoing') {
+        return {
+          ...base,
+          // Firestore Timestamps need to be converted to JS Dates
+          startedOn: (data.startedOn.toDate ? data.startedOn.toDate() : new Date(data.startedOn)),
+          description: data.description
+        } as OngoingContent;
+      }
+      return null;
     }).filter(Boolean) as ContentPost[];
 
   } catch (error) {
-      console.error("Error fetching all content from MySQL, returning empty array:", error);
+      console.error("Error fetching all content from Firestore, returning empty array:", error);
       return [];
   }
 }

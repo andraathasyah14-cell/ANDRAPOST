@@ -43,7 +43,8 @@ function ContentItemRow({ item, typeName }: { item: ContentItem; typeName: strin
 
   const performDelete = async () => {
     setIsDeleting(true);
-    const result = await handleDeleteContent(item.id);
+    // Firestore uses string IDs
+    const result = await handleDeleteContent(item.id.toString());
     if (result.success) {
       toast({
         title: 'Berhasil',
