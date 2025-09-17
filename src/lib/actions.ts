@@ -2,7 +2,8 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
+import { db } from '@/lib/firebase-admin';
 import { PlaceHolderImages, getImageDetailsById } from './placeholder-images';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
@@ -60,7 +61,6 @@ const profileSchema = z.object({
 
 export async function updateProfile(prevState:any, formData: FormData) {
   try {
-    const db = getFirestore();
     const toolEntries = formData.getAll('tools');
     const tools = toolEntries.map((entry: any) => JSON.parse(entry));
     
@@ -122,7 +122,6 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
     }
     
     try {
-        const db = getFirestore();
         const imageDetails = getImageDetailsById(validatedFields.data.image);
         if (!imageDetails) {
             return {
@@ -182,7 +181,6 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
     }
     
     try {
-        const db = getFirestore();
         const imageDetails = getImageDetailsById(validatedFields.data.image);
         if (!imageDetails) {
             return {
@@ -239,7 +237,6 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
     }
     
     try {
-        const db = getFirestore();
         const imageDetails = getImageDetailsById(validatedFields.data.image);
         if (!imageDetails) {
              return {
