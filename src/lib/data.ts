@@ -42,7 +42,9 @@ export interface ContentBase {
   contentType: ContentType;
   title: string;
   tags: Tag[];
-  image: ImageDetails;
+  image: {
+    imageUrl: string;
+  };
 }
 
 // Specific content types extending the base
@@ -82,55 +84,49 @@ const defaultProfile: Profile = {
   imageUrl: "https://picsum.photos/seed/profile/400/400",
 };
 
-const mockImages: Record<string, ImageDetails> = {
-    opinion1: { id: "opinion1", imageUrl: "https://picsum.photos/seed/opinion1/600/400", description: "writing desk", imageHint: "writing desk" },
-    publication1: { id: "publication1", imageUrl: "https://picsum.photos/seed/pub1/600/400", description: "academic journals", imageHint: "academic journals" },
-    ongoing1: { id: "ongoing1", imageUrl: "https://picsum.photos/seed/ongoing1/600/400", description: "whiteboard equations", imageHint: "whiteboard equations" }
-};
-
-const mockContent: ContentPost[] = [
-    {
-        id: "1",
-        contentType: 'opinion',
-        title: "Pentingnya Literasi Digital di Era Disinformasi",
-        postedOn: "2024-05-10",
-        tags: ["Original", "Technology", "Domestic"],
-        image: mockImages['opinion1'],
-        content: "Di tengah derasnya arus informasi, kemampuan untuk memilah berita benar dan hoaks menjadi krusial. Pemerintah dan masyarakat perlu bersinergi untuk meningkatkan literasi digital."
-    },
-    {
-        id: "2",
-        contentType: 'publication',
-        title: "Analisis Dampak Kebijakan Kendaraan Listrik di Jakarta",
-        publishedOn: "Q1 2024",
-        tags: ["Quantitative", "Government", "Technology"],
-        image: mockImages['publication1'],
-        status: 'public',
-        fileUrl: '#',
-        viewUrl: '#',
-        description: 'Penelitian ini mengukur dampak insentif fiskal terhadap adopsi kendaraan listrik dan pengaruhnya terhadap kualitas udara di DKI Jakarta.'
-    },
-    {
-        id: "3",
-        contentType: 'ongoing',
-        title: "Pemetaan Tata Kelola Data di Sektor Pemerintahan",
-        startedOn: new Date("2024-03-15"),
-        tags: ["Government", "Qualitative"],
-        image: mockImages['ongoing1'],
-        description: 'Riset yang sedang berjalan untuk memetakan tantangan dan peluang dalam implementasi kebijakan satu data di tingkat nasional dan daerah.'
-    }
-];
-
 
 // --- Main Data Fetching Functions ---
 
 export async function getProfile(): Promise<Profile> {
-  // Database functionality is temporarily disabled.
-  return Promise.resolve(defaultProfile);
+  try {
+    const doc = await db.collection('app-data').doc('profile').get();
+    if (!doc.exists) {
+      // If profile doesn't exist in Firestore, create it from default
+      await db.collection('app-data').doc('profile').set(defaultProfile);
+      console.log('Profile document created from default.');
+      return defaultProfile;
+    }
+    return doc.data() as Profile;
+  } catch (error) {
+    console.error('Error fetching profile, returning default:', error);
+    // Return default profile as a fallback if Firestore is unreachable
+    return defaultProfile;
+  }
 }
 
 export async function getAllContent(): Promise<ContentPost[]> {
-  return Promise.resolve(mockContent);
+  try {
+    const snapshot = await db.collection('content').get();
+    if (snapshot.empty) {
+      return [];
+    }
+    const content = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // Firestore `Timestamp` objects need to be converted to JS `Date` objects
+      if (data.contentType === 'ongoing' && data.startedOn?.toDate) {
+        return {
+          id: doc.id,
+          ...data,
+          startedOn: data.startedOn.toDate(),
+        } as OngoingContent;
+      }
+      return { id: doc.id, ...data } as ContentPost;
+    });
+    return content;
+  } catch (error) {
+      console.error("Error fetching all content, returning empty array:", error);
+      return [];
+  }
 }
 
 
@@ -143,9 +139,9 @@ export async function getHomePageData() {
       getAllContent()
     ]);
 
-    const opinions = allContent.filter(c => c.contentType === 'opinion') as OpinionContent[];
+    const opinions = allContent.filter(c => c.contentType === 'opinion').sort((a,b) => new Date(b.postedOn).getTime() - new Date(a.postedOn).getTime()) as OpinionContent[];
     const publications = allContent.filter(c => c.contentType === 'publication') as PublicationContent[];
-    const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing') as OngoingContent[];
+    const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing').sort((a,b) => b.startedOn.getTime() - a.startedOn.getTime()) as OngoingContent[];
 
     return {
       profile,

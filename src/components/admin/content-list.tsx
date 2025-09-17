@@ -90,7 +90,7 @@ function ContentItemRow({ item, typeName }: { item: ContentItem; typeName: strin
             <AlertDialogHeader>
               <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
               <AlertDialogDescription>
-                Tindakan ini tidak dapat diurungkan. Ini akan menghapus konten secara permanen dari server (secara demo).
+                Tindakan ini tidak dapat diurungkan. Ini akan menghapus konten secara permanen dari server.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

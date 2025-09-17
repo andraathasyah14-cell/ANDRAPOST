@@ -42,7 +42,7 @@ function SubmitButton() {
   );
 }
 
-export default function OpinionForm({ onUpload }: { onUpload: (prevState: any, formData: FormData) => Promise<any> }) {
+export default function OpinionForm({ onUpload }: { onUpload: (prevState: any, formData: FormData) => Promise<{ success: boolean; message: string; errors: any; }> }) {
   const [state, formAction] = useActionState(onUpload, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);

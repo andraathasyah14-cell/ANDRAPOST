@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BrainCircuit } from 'lucide-react';
 import Logo from '@/components/logo';
-import { getAllContent, getProfile } from '@/lib/data';
+import { getAllContent, getProfile, type OpinionContent, type PublicationContent, type OngoingContent } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OpinionForm from '@/components/admin/opinion-form';
 import PublicationForm from '@/components/admin/publication-form';
@@ -30,11 +30,12 @@ export default async function AdminPage() {
     totalPublications: allContent.filter(c => c.contentType === 'publication').length,
     totalOpinions: allContent.filter(c => c.contentType === 'opinion').length,
     tools: profile.tools,
+    imageUrl: profile.imageUrl,
   };
   
-  const opinions = allContent.filter(c => c.contentType === 'opinion');
-  const publications = allContent.filter(c => c.contentType === 'publication');
-  const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing');
+  const opinions = allContent.filter(c => c.contentType === 'opinion') as OpinionContent[];
+  const publications = allContent.filter(c => c.contentType === 'publication') as PublicationContent[];
+  const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing') as OngoingContent[];
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center p-4">

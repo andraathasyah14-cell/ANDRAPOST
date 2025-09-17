@@ -43,10 +43,9 @@ export default function OngoingSection({ ongoingResearches }: OngoingSectionProp
                   <div className="aspect-video overflow-hidden">
                     <Image
                       src={research.image.imageUrl}
-                      alt={research.image.description}
+                      alt={research.title}
                       width={600}
                       height={400}
-                      data-ai-hint={research.image.imageHint}
                       className="object-cover w-full h-full"
                     />
                   </div>

@@ -66,10 +66,9 @@ export default function PublicationList({
               <div className="aspect-video overflow-hidden relative">
                 <Image
                   src={pub.image.imageUrl}
-                  alt={pub.image.description}
+                  alt={pub.title}
                   width={600}
                   height={400}
-                  data-ai-hint={pub.image.imageHint}
                   className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                 />
                 <div

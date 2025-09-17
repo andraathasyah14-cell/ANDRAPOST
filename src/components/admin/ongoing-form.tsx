@@ -41,7 +41,7 @@ function SubmitButton() {
   );
 }
 
-export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, formData: FormData) => Promise<any> }) {
+export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, formData: FormData) => Promise<{ success: boolean; message: string; errors: any; }> }) {
   const [state, formAction] = useActionState(onUpload, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
@@ -117,7 +117,7 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
         {state?.errors?.description && <p className="text-sm text-destructive">{state.errors.description[0]}</p>}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="image-upload">Gambar</Label>
+        <Label htmlFor="image-upload-ongoing">Gambar</Label>
         <div className="flex items-center gap-4">
           <div className="w-32 h-20 bg-muted rounded-md flex items-center justify-center">
             {isUploading ? <Loader2 className="animate-spin" /> : imageUrl ? (

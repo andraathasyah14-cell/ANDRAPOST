@@ -45,10 +45,9 @@ export default function OpinionList({ opinions, authorName }: OpinionListProps) 
               <div className="aspect-video overflow-hidden">
                 <Image
                   src={opinion.image.imageUrl}
-                  alt={opinion.image.description}
+                  alt={opinion.title}
                   width={600}
                   height={400}
-                  data-ai-hint={opinion.image.imageHint}
                   className="object-cover w-full h-full"
                 />
               </div>
