@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -43,7 +44,7 @@ function SubmitButton() {
 }
 
 export default function PublicationForm({ onUpload }: { onUpload: (prevState: any, formData: FormData) => Promise<any> }) {
-  const [state, formAction] = useFormState(onUpload, initialState);
+  const [state, formAction] = useActionState(onUpload, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
