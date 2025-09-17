@@ -1,6 +1,6 @@
+// src/components/sections/hero-section.tsx
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { BookOpen, MessageSquare } from 'lucide-react';
 import { ToolLogos } from '../icons/tool-logos';
 import type { OpinionContent, PublicationContent, Profile } from '@/lib/data';
@@ -12,7 +12,6 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ profile, opinions, publications }: HeroSectionProps) {
-  const profileImage = PlaceHolderImages.find((p) => p.id === 'profile');
   const totalPublications = publications.length;
   const totalOpinions = opinions.length;
 
@@ -21,17 +20,14 @@ export default function HeroSection({ profile, opinions, publications }: HeroSec
       <div className="container">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 items-center">
           <div className="md:col-span-1 flex justify-center">
-            {profileImage && (
-              <Image
-                src={profileImage.imageUrl}
-                alt={profileImage.description}
-                width={250}
-                height={250}
-                data-ai-hint={profileImage.imageHint}
-                className="rounded-lg aspect-square object-cover border-4 border-background shadow-lg"
-                priority // Prioritize loading the hero image
-              />
-            )}
+            <Image
+              src={profile.imageUrl || "https://picsum.photos/seed/profile/400/400"}
+              alt={profile.name}
+              width={250}
+              height={250}
+              className="rounded-lg aspect-square object-cover border-4 border-background shadow-lg"
+              priority // Prioritize loading the hero image
+            />
           </div>
           <div className="md:col-span-2 space-y-4 text-center md:text-left">
             <h1 className="text-4xl md:text-5xl font-bold font-headline tracking-tight text-foreground">

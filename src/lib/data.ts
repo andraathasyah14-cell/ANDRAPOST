@@ -1,7 +1,7 @@
+// src/lib/data.ts
 'use server';
 import 'server-only';
-// import { Timestamp } from 'firebase-admin/firestore';
-// import { db } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase-admin';
 
 // --- Data Type Definitions ---
 
@@ -31,6 +31,7 @@ export interface Profile {
   name: string;
   description: string;
   tools: Tool[];
+  imageUrl?: string;
 }
 
 export type ContentType = 'opinion' | 'publication' | 'ongoing';
@@ -69,7 +70,7 @@ export interface OngoingContent extends ContentBase {
 export type ContentPost = OpinionContent | PublicationContent | OngoingContent;
 
 // --- MOCK DATA ---
-const mockProfile: Profile = {
+const defaultProfile: Profile = {
   name: "Diandra Athasyah Subagja",
   description: "Seorang analis kebijakan publik dengan minat pada teknologi dan pemerintahan. Saat ini bekerja sebagai peneliti di sebuah lembaga think tank independen di Jakarta.",
   tools: [
@@ -77,7 +78,8 @@ const mockProfile: Profile = {
     { name: "MySQL", icon: "MySQL" },
     { name: "Jupyter", icon: "Jupyter" },
     { name: "Anaconda", icon: "Anaconda" },
-  ]
+  ],
+  imageUrl: "https://picsum.photos/seed/profile/400/400",
 };
 
 const mockImages: Record<string, ImageDetails> = {
@@ -123,7 +125,18 @@ const mockContent: ContentPost[] = [
 // --- Main Data Fetching Functions ---
 
 export async function getProfile(): Promise<Profile> {
-    return Promise.resolve(mockProfile);
+  try {
+    const doc = await db.collection('app-data').doc('profile').get();
+    if (!doc.exists) {
+      // If profile doesn't exist in Firestore, create it from default
+      await db.collection('app-data').doc('profile').set(defaultProfile);
+      return defaultProfile;
+    }
+    return doc.data() as Profile;
+  } catch (error) {
+    console.error("Error fetching profile, returning default:", error);
+    return defaultProfile;
+  }
 }
 
 export async function getAllContent(): Promise<ContentPost[]> {

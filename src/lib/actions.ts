@@ -1,9 +1,9 @@
+// src/lib/actions.ts
 'use server';
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-// import { Timestamp } from 'firebase-admin/firestore';
-// import { db } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase-admin';
 import { PlaceHolderImages, getImageDetailsById } from './placeholder-images';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
@@ -56,15 +56,35 @@ const profileSchema = z.object({
     name: z.string().min(1, 'Nama harus diisi'),
     description: z.string().min(1, 'Deskripsi harus diisi'),
     tools: z.array(toolSchema),
+    imageUrl: z.string().url("URL gambar tidak valid").optional().or(z.literal('')),
 });
 
 
 export async function updateProfile(prevState:any, formData: FormData) {
-  console.log("Profile update is disabled in this environment.");
-  // Revalidate paths to show potential UI changes even if data isn't saved
-  revalidatePath('/');
-  revalidatePath('/admin01');
-  return { success: true, message: 'Fungsi pembaruan profil dinonaktifkan sementara.' };
+  try {
+    const parsedTools = formData.getAll('tools').map(t => JSON.parse(t.toString()));
+    
+    const validatedFields = profileSchema.safeParse({
+        name: formData.get('name'),
+        description: formData.get('description'),
+        tools: parsedTools,
+        imageUrl: formData.get('imageUrl'),
+    });
+
+    if (!validatedFields.success) {
+      console.log(validatedFields.error.flatten().fieldErrors);
+      return { success: false, message: 'Validasi data profil gagal.' };
+    }
+    
+    await db.collection('app-data').doc('profile').set(validatedFields.data, { merge: true });
+
+    revalidatePath('/');
+    revalidatePath('/admin01');
+    return { success: true, message: 'Profil berhasil diperbarui!' };
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return { success: false, message: 'Gagal memperbarui profil.' };
+  }
 }
 
 // --- OPINION UPLOAD ACTION ---
