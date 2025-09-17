@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 const tags = [
   'Repost',
@@ -90,12 +92,20 @@ export default function OpinionForm({ onUpload }: { onUpload: (prevState: any, f
         {state?.errors?.content && <p className="text-sm text-destructive">{state.errors.content[0]}</p>}
       </div>
        <div className="space-y-2">
-        <Label htmlFor="image">Gambar (Image ID)</Label>
-        <Input id="image" name="image" list="image-suggestions" placeholder="e.g., opinion1" />
-         <datalist id="image-suggestions">
-            {PlaceHolderImages.map(img => <option key={img.id} value={img.id} />)}
-        </datalist>
-        <p className="text-xs text-muted-foreground">Pilih ID gambar dari daftar placeholder yang ada.</p>
+        <Label htmlFor="image">Gambar</Label>
+        <Select name="image">
+            <SelectTrigger>
+                <SelectValue placeholder="Pilih gambar placeholder" />
+            </SelectTrigger>
+            <SelectContent>
+                {PlaceHolderImages.map(img => (
+                    <SelectItem key={img.id} value={img.id}>
+                        {img.id} - {img.description}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">Pilih gambar dari daftar placeholder yang ada.</p>
         {state?.errors?.image && <p className="text-sm text-destructive">{state.errors.image[0]}</p>}
       </div>
       <SubmitButton />
