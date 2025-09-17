@@ -1,8 +1,7 @@
-
 // src/app/login/page.tsx
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,18 +41,20 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (state.message) {
-      toast({
-        title: state.success ? 'Login Berhasil' : 'Login Gagal',
-        description: state.message,
-        variant: state.success ? 'default' : 'destructive',
-      });
-    }
-
+    // If login is successful, redirect immediately. This is the highest priority.
     if (state.success) {
       const redirectUrl = searchParams.get('redirect') || '/admin01';
-      // Use router.replace to avoid adding a new entry to the history stack
       router.replace(redirectUrl);
+      return; // Stop further execution in this effect
+    }
+
+    // If there's a message (and it was not a success), show a toast.
+    if (state.message) {
+      toast({
+        title: 'Login Gagal',
+        description: state.message,
+        variant: 'destructive',
+      });
     }
   }, [state, router, searchParams, toast]);
 
