@@ -19,13 +19,13 @@ import { updateProfile } from '@/lib/actions';
 import { ToolLogos } from '@/components/icons/tool-logos';
 
 const toolSchema = z.object({
-  name: z.string().min(1, 'Tool name is required'),
-  icon: z.string().min(1, 'Icon name is required'),
+  name: z.string().min(1, 'Nama perkakas harus diisi'),
+  icon: z.string().min(1, 'Ikon harus dipilih'),
 });
 
 const profileSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
+  name: z.string().min(1, 'Nama harus diisi'),
+  description: z.string().min(1, 'Deskripsi harus diisi'),
   tools: z.array(toolSchema),
 });
 
@@ -46,7 +46,7 @@ function SubmitButton() {
   return (
     <Button type="submit" disabled={pending}>
       {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      Save Changes
+      Simpan Perubahan
     </Button>
   );
 }
@@ -74,7 +74,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
   useEffect(() => {
     if (state.message) {
       toast({
-        title: state.success ? 'Success' : 'Error',
+        title: state.success ? 'Berhasil' : 'Gagal',
         description: state.message,
         variant: state.success ? 'default' : 'destructive',
       });
@@ -97,7 +97,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
       <div className="lg:col-span-1 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Foto Pribadi</CardTitle>
+            <CardTitle>Foto Profil</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
             <Image
@@ -108,13 +108,13 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
               className="rounded-full aspect-square object-cover border-4 border-background shadow-lg"
             />
              <p className="text-sm text-center text-muted-foreground">
-              Profile photo upload is for demonstration and is not connected to the server.
+              Pengunggahan foto profil hanya untuk demonstrasi dan tidak terhubung ke server.
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Statistik</CardTitle>
+            <CardTitle>Statistik Konten</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center">
@@ -162,7 +162,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 <FormItem>
                   <FormLabel>Nama</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your Name" {...field} />
+                    <Input placeholder="Nama Anda" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -174,9 +174,9 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Deskripsi Singkat</FormLabel>
+                  <FormLabel>Deskripsi Profil</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="A brief, compelling description..." rows={5} {...field} />
+                    <Textarea placeholder="Deskripsi singkat dan menarik tentang Anda..." rows={5} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -184,7 +184,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
             />
 
             <div>
-              <Label className="mb-4 block">Input Foto/Logo Tools</Label>
+              <Label className="mb-4 block">Kelola Perkakas</Label>
               <div className="space-y-4">
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-center gap-4">
@@ -194,7 +194,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                       render={({ field }) => (
                         <FormItem className="flex-grow">
                           <FormControl>
-                            <Input placeholder="Tool Name" {...field} />
+                            <Input placeholder="Nama Perkakas" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -207,7 +207,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                         <FormItem className="flex-grow">
                            <FormControl>
                              <select {...field} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                               <option value="">Select Icon</option>
+                               <option value="">Pilih Ikon</option>
                                {availableIcons.map(iconName => (
                                  <option key={iconName} value={iconName}>{iconName}</option>
                                ))}
@@ -224,7 +224,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 ))}
                 <Button type="button" variant="outline" onClick={() => append({ name: '', icon: '' })}>
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Add Tool
+                  Tambah Perkakas
                 </Button>
               </div>
             </div>

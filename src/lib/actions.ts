@@ -34,19 +34,19 @@ export async function handleCategorize(prevState: any, formData: FormData) {
     console.error(error);
     return {
       suggestedTags: [],
-      error: { _form: 'Failed to categorize content.' },
+      error: { _form: 'Gagal melakukan kategorisasi konten.' },
     };
   }
 }
 
 const toolSchema = z.object({
-  name: z.string().min(1, 'Tool name is required'),
-  icon: z.string().min(1, 'Icon name is required'),
+  name: z.string().min(1, 'Nama perkakas harus diisi'),
+  icon: z.string().min(1, 'Ikon harus dipilih'),
 });
 
 const profileSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
+  name: z.string().min(1, 'Nama harus diisi'),
+  description: z.string().min(1, 'Deskripsi harus diisi'),
   tools: z.array(toolSchema),
 });
 
@@ -82,10 +82,10 @@ export async function updateProfile(prevState:any, formData: FormData) {
     revalidatePath('/');
     revalidatePath('/admin01');
 
-    return { success: true, message: 'Profile updated successfully!' };
+    return { success: true, message: 'Profil berhasil diperbarui!' };
 
   } catch (error) {
     console.error('Error updating profile:', error);
-    return { success: false, message: 'Failed to update profile.' };
+    return { success: false, message: 'Gagal memperbarui profil.' };
   }
 }
