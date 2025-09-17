@@ -85,10 +85,17 @@ export default {
             height: '0',
           },
         },
+        'loading-bar': {
+            '0%': { width: '0%', left: '0', right: 'unset' },
+            '50%': { width: '100%', left: '0', right: 'unset' },
+            '51%': { width: '100%', left: 'unset', right: '0' },
+            '100%': { width: '0%', left: 'unset', right: '0' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'loading-bar': 'loading-bar 2s ease-in-out infinite',
       },
     },
   },
