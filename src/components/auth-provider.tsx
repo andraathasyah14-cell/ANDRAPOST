@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
         await signInWithEmailAndPassword(clientAuth, email, pass);
     } catch (error: any) {
-        // If the user doesn't exist, create a new account.
+        // If the user doesn't exist or the credential is no longer valid, try to create a new account.
         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
             try {
                 await createUserWithEmailAndPassword(clientAuth, email, pass);
