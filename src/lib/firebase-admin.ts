@@ -1,3 +1,4 @@
+
 // src/lib/firebase-admin.ts
 import admin from 'firebase-admin';
 
@@ -7,6 +8,7 @@ import admin from 'firebase-admin';
 
 interface FirebaseAdmin {
   db: admin.firestore.Firestore;
+  storage: admin.storage.Storage;
   admin: typeof admin;
 }
 
@@ -30,28 +32,34 @@ function initializeFirebaseAdmin(): FirebaseAdmin | null {
   // When running in a Google Cloud environment (like Firebase Studio or App Hosting),
   // the SDK can automatically detect the service account credentials.
   try {
-    if (!admin.apps.length) {
-       const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-        : undefined;
+    const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (!serviceAccountString) {
+      console.log('FIREBASE_SERVICE_ACCOUNT_KEY is not set. Firebase Admin initialization skipped.');
+      global.__firebase_admin_sdk = null;
+      return null;
+    }
+    
+    const serviceAccount = JSON.parse(serviceAccountString);
 
+    if (!admin.apps.length) {
       admin.initializeApp({
-        credential: serviceAccount ? admin.credential.cert(serviceAccount) : admin.credential.applicationDefault(),
+        credential: admin.credential.cert(serviceAccount),
         storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
       });
       console.log('Firebase Admin SDK initialized successfully.');
     }
   } catch (error: any) {
     // Log a more informative error message
-    console.error(`Firebase admin initialization error. This is often caused by missing or incorrect FIREBASE_SERVICE_ACCOUNT_KEY environment variables. Please check your configuration.`);
+    console.error('Firebase admin initialization error:', error.message);
     // Mark initialization as failed by setting the global to null
     global.__firebase_admin_sdk = null;
     return null;
   }
 
   const db = admin.firestore();
+  const storage = admin.storage();
   
-  const firebaseAdminSDK: FirebaseAdmin = { db, admin };
+  const firebaseAdminSDK: FirebaseAdmin = { db, storage, admin };
 
   global.__firebase_admin_sdk = firebaseAdminSDK;
 
