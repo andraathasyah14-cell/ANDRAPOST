@@ -28,7 +28,7 @@ import Image from 'next/image';
 
 const toolSchema = z.object({
   name: z.string().min(1, 'Tool name is required'),
-  icon: z.string().min(1, 'Icon name is required'),
+  icon: z.any().refine(file => file, 'Icon is required.'),
 });
 
 const profileSchema = z.object({
@@ -58,7 +58,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     defaultValues: {
       name: profileData.name,
       description: profileData.description,
-      tools: profileData.tools,
+      tools: profileData.tools.map(t => ({...t, icon: null})),
     },
   });
 
@@ -191,10 +191,17 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                     <FormField
                       control={form.control}
                       name={`tools.${index}.icon`}
-                      render={({ field }) => (
+                      render={({ field: { onChange, ...fieldProps } }) => (
                         <FormItem className="flex-grow">
                           <FormControl>
-                            <Input placeholder="Icon Component Name" {...field} />
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(event) =>
+                                onChange(event.target.files && event.target.files[0])
+                              }
+                              {...fieldProps}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -213,7 +220,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => append({ name: '', icon: '' })}
+                  onClick={() => append({ name: '', icon: null })}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add Tool
