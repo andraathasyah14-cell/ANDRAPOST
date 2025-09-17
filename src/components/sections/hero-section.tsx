@@ -34,7 +34,7 @@ export default function HeroSection({ profile, opinions, publications }: HeroSec
             )}
           </div>
           <div className="md:col-span-2 space-y-4 text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-bold font-headline tracking-tight text-primary">
+            <h1 className="text-4xl md:text-5xl font-bold font-headline tracking-tight text-foreground">
               {profile.name}
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto md:mx-0">

@@ -70,7 +70,7 @@ export type ContentPost = OpinionContent | PublicationContent | OngoingContent;
 
 // --- MOCK DATA ---
 const mockProfile: Profile = {
-  name: "Andra Pratama",
+  name: "Diandra Athasyah Subagja",
   description: "Seorang analis kebijakan publik dengan minat pada teknologi dan pemerintahan. Saat ini bekerja sebagai peneliti di sebuah lembaga think tank independen di Jakarta.",
   tools: [
     { name: "Stata", icon: "Stata" },
