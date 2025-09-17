@@ -1,62 +1,76 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import {
+  User,
+  Lightbulb,
+  BookOpen,
+  ClipboardList,
+  MessageSquare,
+} from 'lucide-react';
 import type { FC } from 'react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 type NavLink = {
   id: string;
   label: string;
+  icon: React.ElementType;
 };
 
 export const navLinks: NavLink[] = [
-  { id: 'profile', label: 'Profil' },
-  { id: 'ongoing', label: 'Ongoing' },
-  { id: 'opini', label: 'Opini' },
-  { id: 'publikasi', label: 'Publikasi' },
-  { id: 'feedback', label: 'Kritik & Saran' },
+  { id: 'profile', label: 'Profil', icon: User },
+  { id: 'ongoing', label: 'Ongoing', icon: ClipboardList },
+  { id: 'opini', label: 'Opini', icon: Lightbulb },
+  { id: 'publikasi', label: 'Publikasi', icon: BookOpen },
+  { id: 'feedback', label: 'Kritik & Saran', icon: MessageSquare },
 ];
 
 interface MainNavProps {
   activeSection: string;
   onLinkClick: (id: string) => void;
   className?: string;
-  isMobile?: boolean;
 }
 
 const MainNav: FC<MainNavProps> = ({
   activeSection,
   onLinkClick,
   className,
-  isMobile = false,
 }) => {
   return (
-    <nav className={cn('flex', className)}>
-      <ul
-        className={cn('flex', {
-          'flex-col space-y-2': isMobile,
-          'items-center space-x-2': !isMobile,
-        })}
-      >
-        {navLinks.map((link) => (
-          <li key={link.id}>
-            <button
-              onClick={() => onLinkClick(link.id)}
-              className={cn(
-                'px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
-                activeSection === link.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                {
-                  'w-full text-left': isMobile,
-                }
-              )}
-            >
-              {link.label}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <TooltipProvider delayDuration={0}>
+      <nav className={cn('flex', className)}>
+        <ul className="flex flex-col space-y-1">
+          {navLinks.map((link) => (
+            <li key={link.id}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onLinkClick(link.id)}
+                    className={cn(
+                      'flex items-center justify-center h-12 w-12 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
+                      activeSection === link.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    )}
+                    aria-label={link.label}
+                  >
+                    <link.icon className="h-6 w-6" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>{link.label}</p>
+                </TooltipContent>
+              </Tooltip>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </TooltipProvider>
   );
 };
 
