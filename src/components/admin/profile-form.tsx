@@ -17,7 +17,7 @@ import { BookOpen, MessageSquare, PlusCircle, Trash2, Loader2, Camera, Upload } 
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { updateProfile } from '@/lib/actions';
-import { handleImageUpload, type UploadProgress } from '@/lib/storage';
+import { handleImageReplacement, type UploadProgress } from '@/lib/storage';
 import type { Profile } from '@/lib/data';
 import { Progress } from '@/components/ui/progress';
 
@@ -110,6 +110,8 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     if (!file) return;
 
     if (isTool && typeof index !== 'number') return;
+    
+    const oldImageUrl = isTool ? form.getValues(`tools.${index!}.imageUrl`) : form.getValues('imageUrl');
 
     if(isTool) {
       setUploadingToolIndex(index!);
@@ -117,14 +119,15 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     setUploadProgress({ percentage: 0, speed: '0 KB/s' });
     
     try {
-      const url = await handleImageUpload(file, (progress) => {
+      // Use the new replacement function
+      const url = await handleImageReplacement(oldImageUrl, file, (progress) => {
         setUploadProgress(progress);
       });
       
       if (isTool) {
-        form.setValue(`tools.${index!}.imageUrl`, url);
+        form.setValue(`tools.${index!}.imageUrl`, url, { shouldValidate: true });
       } else {
-        form.setValue('imageUrl', url);
+        form.setValue('imageUrl', url, { shouldValidate: true });
       }
 
       toast({
@@ -176,7 +179,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 id="profile-image-upload" 
                 type="file" 
                 className="hidden" 
-                accept="image/png, image/jpeg"
+                accept="image/png, image/jpeg, image/gif, image/webp"
                 onChange={(e) => onImageChange(e, false)}
                 disabled={!!uploadProgress}
               />
@@ -280,7 +283,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                         id={`tool-logo-upload-${index}`}
                         type="file"
                         className="hidden"
-                        accept="image/png, image/jpeg, image/svg+xml"
+                        accept="image/png, image/jpeg, image/svg+xml, image/gif, image/webp"
                         onChange={(e) => onImageChange(e, true, index)}
                         disabled={uploadingToolIndex !== null}
                       />
