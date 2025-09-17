@@ -97,7 +97,7 @@ export async function getProfile(): Promise<Profile> {
     }
     return doc.data() as Profile;
   } catch (error) {
-    console.error('Error fetching profile, returning default profile.');
+    console.log('Error fetching profile, returning default profile.');
     // Return default profile as a fallback if Firestore is unreachable
     return defaultProfile;
   }
@@ -123,7 +123,7 @@ export async function getAllContent(): Promise<ContentPost[]> {
     });
     return content;
   } catch (error) {
-      console.error("Error fetching all content, returning empty array.");
+      console.log("Error fetching all content, returning empty array.");
       return [];
   }
 }
