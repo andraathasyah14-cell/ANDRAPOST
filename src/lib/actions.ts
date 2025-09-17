@@ -1,6 +1,7 @@
 'use server';
 
 import { categorizeContent } from '@/ai/flows/categorize-content';
+import { saveFeedback } from '@/ai/flows/save-feedback';
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
@@ -296,4 +297,42 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
         console.error('Error uploading ongoing research:', error);
         return { success: false, message: 'Gagal menambahkan ongoing research.', errors: null };
     }
+}
+
+const feedbackSchema = z.object({
+  name: z.string().min(1, 'Nama harus diisi.'),
+  email: z.string().email('Format email tidak valid.'),
+  message: z.string().min(1, 'Pesan tidak boleh kosong.'),
+});
+
+export async function handleFeedbackSubmit(prevState: any, formData: FormData) {
+  const validatedFields = feedbackSchema.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    message: formData.get('message'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      message: 'Validasi gagal.',
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await saveFeedback(validatedFields.data);
+    return {
+      success: true,
+      message: 'Terima kasih! Pesan Anda telah terkirim.',
+      errors: null,
+    };
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    return {
+      success: false,
+      message: 'Gagal mengirim pesan. Silakan coba lagi nanti.',
+      errors: null,
+    };
+  }
 }
