@@ -80,6 +80,7 @@ const defaultProfile: Profile = {
     { name: "MySQL", imageUrl: "/tool-logos/mysql.svg" },
     { name: "Jupyter", imageUrl: "/tool-logos/jupyter.svg" },
     { name: "Anaconda", imageUrl: "/tool-logos/anaconda.svg" },
+    { name: "AWS", imageUrl: "/tool-logos/aws.svg" },
   ],
   imageUrl: "https://picsum.photos/seed/profile/400/400",
 };
@@ -89,6 +90,7 @@ const defaultProfile: Profile = {
 
 export async function getProfile(): Promise<Profile> {
   if (!db) {
+    console.log('Firestore is not available, returning default profile.');
     return defaultProfile;
   }
   try {
@@ -109,6 +111,7 @@ export async function getProfile(): Promise<Profile> {
 
 export async function getAllContent(): Promise<ContentPost[]> {
   if (!db) {
+    console.log('Firestore is not available, returning empty content array.');
     return [];
   }
   try {
