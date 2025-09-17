@@ -31,25 +31,22 @@ export function initializeFirebaseAdmin(): FirebaseAdmin | null {
   
   try {
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-    if (!projectId || !clientEmail || !privateKey) {
-        console.warn('Firebase Admin credentials (project_id, client_email, private_key) are not fully set in environment variables. Firebase Admin initialization skipped.');
-        global.__firebase_admin_sdk = null;
-        return null;
-    }
     
+    if (!projectId) {
+      console.warn('NEXT_PUBLIC_FIREBASE_PROJECT_ID is not set. Firebase Admin initialization skipped.');
+      global.__firebase_admin_sdk = null;
+      return null;
+    }
+
     if (!admin.apps.length) {
+      // Use Application Default Credentials. This is the recommended way for server environments.
+      // It will automatically use the service account credentials from the environment
+      // (e.g., when deployed to Google Cloud) or from the gcloud CLI locally.
       admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId,
-          clientEmail,
-          privateKey,
-        }),
+        projectId: projectId,
         storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
       });
-      console.log('Firebase Admin SDK initialized successfully.');
+      console.log('Firebase Admin SDK initialized successfully using Application Default Credentials.');
     }
   } catch (error: any) {
     // Log a more informative error message
