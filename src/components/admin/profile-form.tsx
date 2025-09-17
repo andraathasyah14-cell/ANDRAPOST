@@ -176,7 +176,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 id="profile-image-upload" 
                 type="file" 
                 className="hidden" 
-                accept="image/png, image/jpeg, image/gif"
+                accept="image/png, image/jpeg"
                 onChange={(e) => onImageChange(e, false)}
                 disabled={!!uploadProgress}
               />
@@ -280,7 +280,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                         id={`tool-logo-upload-${index}`}
                         type="file"
                         className="hidden"
-                        accept="image/png, image/jpeg, image/gif, image/svg+xml"
+                        accept="image/png, image/jpeg, image/svg+xml"
                         onChange={(e) => onImageChange(e, true, index)}
                         disabled={uploadingToolIndex !== null}
                       />

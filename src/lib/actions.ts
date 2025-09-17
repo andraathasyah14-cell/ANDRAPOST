@@ -2,56 +2,9 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { db, admin } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase-admin';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
-
-
-// --- GET SIGNED UPLOAD URL ACTION ---
-const getSignedUrlSchema = z.object({
-  fileName: z.string(),
-  fileType: z.string(),
-});
-
-type SignedUrlResult = 
-  | { success: true; signedUrl: string; publicUrl: string }
-  | { success: false; error: string };
-
-export async function getSignedUploadUrl(input: {fileName: string, fileType: string}): Promise<SignedUrlResult> {
-  if (!admin || !db) {
-    console.error('Firebase Admin is not initialized. Cannot get signed URL.');
-    return { success: false, error: 'Firebase Admin is not initialized. Cannot get signed URL.' };
-  }
-
-  const validatedFields = getSignedUrlSchema.safeParse(input);
-
-  if (!validatedFields.success) {
-     return { success: false, error: 'Invalid input for getting signed URL.' };
-  }
-
-  const { fileName, fileType } = validatedFields.data;
-  const uniqueFileName = `${Date.now()}-${fileName}`;
-  const filePath = `uploads/${uniqueFileName}`;
-
-  const bucket = admin.storage().bucket();
-  const file = bucket.file(filePath);
-
-  try {
-    const [signedUrl] = await file.getSignedUrl({
-      version: 'v4',
-      action: 'write',
-      expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-      contentType: fileType,
-    });
-
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
-    
-    return { success: true, signedUrl, publicUrl };
-  } catch (error) {
-    console.error('Error getting signed URL:', error);
-    return { success: false, error: 'Could not get signed URL from server.' };
-  }
-}
 
 
 // --- CATEGORIZE ACTION ---
