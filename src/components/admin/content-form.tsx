@@ -1,3 +1,5 @@
+// This file is no longer used and can be removed.
+// The functionality has been moved to a different page or is no longer needed.
 'use client';
 
 import { useFormState, useFormStatus } from 'react-dom';

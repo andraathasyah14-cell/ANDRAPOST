@@ -1,4 +1,4 @@
-import ContentForm from '@/components/admin/content-form';
+import ProfileForm from '@/components/admin/profile-form';
 import {
   Card,
   CardContent,
@@ -6,13 +6,21 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { handleCategorize } from '@/lib/actions';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Logo from '@/components/logo';
+import { opinions, publications, tools } from '@/lib/data';
 
 export default function AdminPage() {
+  const profileData = {
+    name: 'Your Name',
+    description: 'A brief, compelling description about your professional identity, expertise, and passion goes here.',
+    totalPublications: publications.length,
+    totalOpinions: opinions.length,
+    tools: tools,
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="absolute top-4 left-4">
@@ -31,17 +39,15 @@ export default function AdminPage() {
         <p className="text-muted-foreground mt-2">Admin Panel</p>
       </div>
 
-      <Card className="w-full max-w-2xl shadow-lg">
+      <Card className="w-full max-w-4xl shadow-lg">
         <CardHeader>
-          <CardTitle>Content Categorization Tool</CardTitle>
+          <CardTitle>Profile Management</CardTitle>
           <CardDescription>
-            Use AI to suggest tags for your content. Enter a title and body,
-            then click &quot;Categorize&quot;. This helps in organizing your
-            Opini, Publikasi, and Ongoing research.
+            Edit your personal information, professional summary, and the tools you showcase.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ContentForm onCategorize={handleCategorize} />
+          <ProfileForm profileData={profileData} />
         </CardContent>
       </Card>
     </div>
