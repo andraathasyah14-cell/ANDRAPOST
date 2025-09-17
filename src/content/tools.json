@@ -1,18 +1,19 @@
+
 [
   {
     "name": "MySQL",
     "icon": "MySQL"
   },
   {
-    "name": "Stata",
-    "icon": "Stata"
-  },
-  {
-    "name": "Anaconda Python",
+    "name": "Anaconda",
     "icon": "Anaconda"
   },
   {
-    "name": "Jupyter Notebook",
+    "name": "Jupyter",
     "icon": "Jupyter"
+  },
+  {
+    "name": "Stata",
+    "icon": "Stata"
   }
 ]
