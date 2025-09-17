@@ -43,7 +43,7 @@ function initializeFirebaseAdmin(): FirebaseAdmin | null {
     }
   } catch (error: any) {
     // Log a more informative error message
-    console.error(`Firebase admin initialization error: ${error.message}. This is often caused by missing or incorrect FIREBASE_SERVICE_ACCOUNT_KEY environment variables.`);
+    console.error(`Firebase admin initialization error. This is often caused by missing or incorrect FIREBASE_SERVICE_ACCOUNT_KEY environment variables. Please check your configuration.`);
     // Mark initialization as failed by setting the global to null
     global.__firebase_admin_sdk = null;
     return null;
