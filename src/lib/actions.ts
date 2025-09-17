@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/mysql'; // Switch to MySQL
 import type { ResultSetHeader } from 'mysql2';
-import { admin } from '@/lib/firebase-admin'; // Keep for signed URL generation and auth
+import { admin, initializeFirebaseAdmin } from '@/lib/firebase-admin';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
 import { randomUUID } from 'crypto';
@@ -54,7 +54,7 @@ export async function handleLogin(prevState: any, formData: FormData) {
         path: '/',
     });
     
-    // We don't need to revalidate paths here, just signal success
+    revalidatePath('/'); // Revalidate to update header state
     return { success: true, message: 'Login Berhasil!', errors: null };
 }
 
@@ -65,15 +65,16 @@ export async function handleLogout() {
 }
 
 
-// --- GET SIGNED UPLOAD URL ACTION (Remains the same, uses Firebase Storage) ---
+// --- GET SIGNED UPLOAD URL ACTION ---
 const getSignedUrlSchema = z.object({
   fileName: z.string().min(1),
   fileType: z.string().min(1),
 });
 
 export async function getSignedUploadUrl(prevState: any, formData: FormData) {
-  await verifyAuth(); // Secure this action
-  if (!admin) {
+  await verifyAuth();
+  const firebaseAdmin = initializeFirebaseAdmin();
+  if (!firebaseAdmin) {
     return { success: false, message: 'Firebase Admin is not initialized. Cannot get signed URL.' };
   }
   const validatedFields = getSignedUrlSchema.safeParse({
@@ -89,7 +90,7 @@ export async function getSignedUploadUrl(prevState: any, formData: FormData) {
   const filePath = `uploads/${randomUUID()}-${fileName}`;
 
   try {
-    const bucket = admin.storage().bucket();
+    const bucket = firebaseAdmin.storage.bucket();
     const file = bucket.file(filePath);
     const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
     const [signedUrl] = await file.getSignedUrl({
