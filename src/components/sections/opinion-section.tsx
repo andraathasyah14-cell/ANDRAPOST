@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import type { OpinionContent, Profile } from '@/lib/data';
 import OpinionList from './opinion-list';

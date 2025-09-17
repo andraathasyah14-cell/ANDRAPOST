@@ -1,3 +1,4 @@
+
 import { getHomePageData } from '@/lib/data';
 import OpinionList from '@/components/sections/opinion-list';
 import Header from '@/components/header';
