@@ -120,6 +120,7 @@ export async function handleImageReplacement(
   newFile: File,
   onProgress: ProgressHandler
 ): Promise<string> {
+  // Call getStorage() inside the function to ensure Firebase App is initialized.
   const storage = getStorage();
 
   // We only attempt to delete if it's a valid Firebase Storage URL.
