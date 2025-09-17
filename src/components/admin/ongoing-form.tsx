@@ -3,17 +3,16 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import { Loader2, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
+import { handleImageUpload } from '@/lib/storage';
 
 const tags = [
   'Repost',
@@ -46,7 +45,8 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
   const [state, formAction] = useActionState(onUpload, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
-
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (state?.message) {
@@ -57,12 +57,38 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
       });
       if (state.success) {
         formRef.current?.reset();
+        setImageUrl(null);
       }
     }
   }, [state, toast]);
 
+  const onImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const url = await handleImageUpload(file, 'ongoing-images');
+      setImageUrl(url);
+      toast({
+        title: 'Berhasil',
+        description: 'Gambar berhasil diunggah.',
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat mengunggah gambar.';
+      toast({
+        title: 'Gagal',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <form ref={formRef} action={formAction} className="space-y-6">
+      <input type="hidden" name="imageUrl" value={imageUrl || ''} />
       <div className="space-y-2">
           <Label htmlFor="startedOn">Waktu (tanggal dimulai)</Label>
           <Input id="startedOn" name="startedOn" type="date" placeholder="YYYY-MM-DD" />
@@ -90,22 +116,25 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
         <Textarea id="description" name="description" placeholder="Deskripsi singkat mengenai riset yang sedang berjalan..." rows={4} />
         {state?.errors?.description && <p className="text-sm text-destructive">{state.errors.description[0]}</p>}
       </div>
-       <div className="space-y-2">
-        <Label htmlFor="image">Gambar</Label>
-        <Select name="image">
-            <SelectTrigger>
-                <SelectValue placeholder="Pilih gambar placeholder" />
-            </SelectTrigger>
-            <SelectContent>
-                {PlaceHolderImages.map(img => (
-                    <SelectItem key={img.id} value={img.id}>
-                        {img.id} - {img.description}
-                    </SelectItem>
-                ))}
-            </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">Pilih gambar dari daftar placeholder yang ada.</p>
-        {state?.errors?.image && <p className="text-sm text-destructive">{state.errors.image[0]}</p>}
+      <div className="space-y-2">
+        <Label htmlFor="image-upload">Gambar</Label>
+        <div className="flex items-center gap-4">
+          <div className="w-32 h-20 bg-muted rounded-md flex items-center justify-center">
+            {isUploading ? <Loader2 className="animate-spin" /> : imageUrl ? (
+              <Image src={imageUrl} alt="Preview" width={128} height={80} className="object-cover rounded-md w-full h-full" />
+            ) : (
+              <ImageIcon className="text-muted-foreground" />
+            )}
+          </div>
+          <Button type="button" asChild variant="outline">
+            <Label htmlFor="image-upload-ongoing" className="cursor-pointer">
+              <UploadCloud className="mr-2" />
+              Unggah Gambar
+            </Label>
+          </Button>
+        </div>
+        <Input id="image-upload-ongoing" type="file" className="hidden" accept="image/*" onChange={onImageChange} disabled={isUploading} />
+        {state?.errors?.imageUrl && <p className="text-sm text-destructive">{state.errors.imageUrl[0]}</p>}
       </div>
       <SubmitButton />
     </form>

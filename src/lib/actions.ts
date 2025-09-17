@@ -1,3 +1,4 @@
+
 // src/lib/actions.ts
 'use server';
 
@@ -75,7 +76,7 @@ const opinionUploadSchema = z.object({
     title: z.string().min(1, "Judul harus diisi"),
     tags: z.array(z.string()).min(1, "Pilih setidaknya satu tag"),
     content: z.string().min(1, "Isi tidak boleh kosong"),
-    image: z.string().min(1, "Gambar harus dipilih"),
+    imageUrl: z.string().url("URL Gambar tidak valid.").min(1, "Gambar harus diunggah."),
 });
 
 
@@ -96,7 +97,7 @@ const publicationUploadSchema = z.object({
     description: z.string().min(1, "Deskripsi tidak boleh kosong"),
     fileUrl: z.string().url("URL file tidak valid").min(1, "URL File tidak boleh kosong"),
     status: z.enum(['public', 'private'], { errorMap: () => ({ message: "Status harus dipilih." }) }),
-    image: z.string().min(1, "Gambar harus dipilih"),
+    imageUrl: z.string().url("URL Gambar tidak valid.").min(1, "Gambar harus diunggah."),
 });
 
 export async function handlePublicationUpload(prevState: any, formData: FormData) {
@@ -114,7 +115,7 @@ const ongoingUploadSchema = z.object({
     title: z.string().min(1, "Judul harus diisi"),
     tags: z.array(z.string()).min(1, "Pilih setidaknya satu tag"),
     description: z.string().min(1, "Deskripsi tidak boleh kosong"),
-    image: z.string().min(1, "Gambar harus dipilih"),
+    imageUrl: z.string().url("URL Gambar tidak valid.").min(1, "Gambar harus diunggah."),
 });
 
 export async function handleOngoingUpload(prevState: any, formData: FormData) {
