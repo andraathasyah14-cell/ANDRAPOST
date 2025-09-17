@@ -23,14 +23,16 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
+    // This component is client-side, so window is available.
     window.addEventListener('scroll', handleScroll);
-    handleScroll();
+    handleScroll(); // Check on initial render
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
   const handleLinkClick = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
+      // 80px offset for the header height
       const y = element.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
@@ -55,7 +57,7 @@ export default function Header() {
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Menu className="h-6 w-6" />
-                  <span className="sr-only">Open menu</span>
+                  <span className="sr-only">Buka menu</span>
                 </Button>
               </SheetTrigger>
               <SheetContent side="left">

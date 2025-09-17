@@ -2,7 +2,7 @@
 'use client';
 
 import { useFormState, useFormStatus } from 'react-dom';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,7 +35,7 @@ const initialState = {
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" disabled={pending} className="w-full sm:w-auto">
       {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
       Upload Publikasi
     </Button>
@@ -45,6 +45,7 @@ function SubmitButton() {
 export default function PublicationForm({ onUpload }: { onUpload: (prevState: any, formData: FormData) => Promise<any> }) {
   const [state, formAction] = useFormState(onUpload, initialState);
   const { toast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (state?.message) {
@@ -53,22 +54,18 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
         description: state.message,
         variant: state.success ? 'default' : 'destructive',
       });
+      if (state.success) {
+        formRef.current?.reset();
+      }
     }
   }, [state, toast]);
 
   return (
-    <form action={formAction} className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-            <Label htmlFor="publishedOn">Waktu (tanggal dibuat)</Label>
-            <Input id="publishedOn" name="publishedOn" placeholder="e.g., Q2 2024" />
-            {state?.errors?.publishedOn && <p className="text-sm text-destructive">{state.errors.publishedOn[0]}</p>}
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="author">Nama Penulis</Label>
-            <Input id="author" name="author" placeholder="Nama Anda" />
-            {state?.errors?.author && <p className="text-sm text-destructive">{state.errors.author[0]}</p>}
-        </div>
+    <form ref={formRef} action={formAction} className="space-y-6">
+       <div className="space-y-2">
+          <Label htmlFor="publishedOn">Waktu (tanggal dibuat)</Label>
+          <Input id="publishedOn" name="publishedOn" placeholder="e.g., Q2 2024 atau YYYY-MM-DD" />
+          {state?.errors?.publishedOn && <p className="text-sm text-destructive">{state.errors.publishedOn[0]}</p>}
       </div>
        <div className="space-y-2">
         <Label htmlFor="title">Judul</Label>
@@ -77,7 +74,7 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
       </div>
       <div className="space-y-2">
         <Label>Tag</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {tags.map((tag) => (
             <div key={tag} className="flex items-center space-x-2">
               <Checkbox id={`pub-tag-${tag}`} name="tags" value={tag} />
@@ -94,8 +91,8 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
       </div>
        <div className="space-y-2">
         <Label htmlFor="fileUrl">URL File Publikasi</Label>
-        <Input id="fileUrl" name="fileUrl" placeholder="https://example.com/file.pdf" />
-         <p className="text-xs text-muted-foreground">Karena batasan sistem, harap masukkan URL ke file yang sudah diunggah di tempat lain.</p>
+        <Input id="fileUrl" name="fileUrl" type="url" placeholder="https://example.com/file.pdf" />
+         <p className="text-xs text-muted-foreground">Harap masukkan URL yang valid (diawali dengan http/https).</p>
         {state?.errors?.fileUrl && <p className="text-sm text-destructive">{state.errors.fileUrl[0]}</p>}
       </div>
       <div className="space-y-2">

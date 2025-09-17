@@ -58,6 +58,7 @@ const MainNav: FC<MainNavProps> = ({
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                     aria-label={link.label}
+                    aria-current={activeSection === link.id ? 'page' : undefined}
                   >
                     <link.icon className="h-6 w-6" />
                   </button>

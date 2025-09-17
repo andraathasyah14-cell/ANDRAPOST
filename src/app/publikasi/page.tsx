@@ -1,4 +1,4 @@
-import { publications } from '@/lib/data';
+import { getHomePageData } from '@/lib/data';
 import PublicationList from '@/components/sections/publication-list';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-export default function AllPublicationsPage() {
+export default async function AllPublicationsPage() {
+  const { publications, profile } = await getHomePageData();
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
@@ -27,7 +29,7 @@ export default function AllPublicationsPage() {
             </p>
           </div>
 
-          <PublicationList publications={publications} />
+          <PublicationList publications={publications} authorName={profile.name} />
         </div>
       </main>
       <Footer />

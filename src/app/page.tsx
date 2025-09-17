@@ -1,6 +1,5 @@
-'use client';
+import 'server-only';
 
-import { useState, useEffect } from 'react';
 import Header from '@/components/header';
 import HeroSection from '@/components/sections/hero-section';
 import OpinionSection from '@/components/sections/opinion-section';
@@ -8,54 +7,27 @@ import PublicationSection from '@/components/sections/publication-section';
 import OngoingSection from '@/components/sections/ongoing-section';
 import FeedbackSection from '@/components/sections/feedback-section';
 import Footer from '@/components/footer';
-import LoadingScreen from '@/components/loading-screen';
-import FloatingNav from '@/components/floating-nav';
+import FloatingNavWrapper from '@/components/floating-nav-wrapper';
+import { getHomePageData } from '@/lib/data';
 
-export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('profile');
+export const revalidate = 3600; // Revalidate data every hour
 
-  const handleScroll = () => {
-    const sections = document.querySelectorAll<HTMLElement>('section');
-    let currentSection = 'profile';
-
-    sections.forEach((section) => {
-      const sectionTop = section.offsetTop;
-      if (window.scrollY >= sectionTop - 120) {
-        currentSection = section.getAttribute('id') || 'profile';
-      }
-    });
-
-    setActiveSection(currentSection);
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 4000);
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll();
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
+export default async function Home() {
+  const data = await getHomePageData();
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
-      <FloatingNav activeSection={activeSection} />
+      <FloatingNavWrapper />
       <main>
-        <HeroSection />
-        <OpinionSection />
-        <PublicationSection />
-        <OngoingSection />
+        <HeroSection 
+          profile={data.profile}
+          opinions={data.opinions} 
+          publications={data.publications} 
+        />
+        <OpinionSection opinions={data.opinions} profile={data.profile} />
+        <PublicationSection publications={data.publications} profile={data.profile} />
+        <OngoingSection ongoingResearches={data.ongoingResearches} />
         <FeedbackSection />
       </main>
       <Footer />

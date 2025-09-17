@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ongoingResearches } from '@/lib/data';
+import type { OngoingContent } from '@/lib/data';
 import { Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -15,7 +15,11 @@ import AnimatedCard from '../animated-card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-export default function OngoingSection() {
+interface OngoingSectionProps {
+    ongoingResearches: OngoingContent[];
+}
+
+export default function OngoingSection({ ongoingResearches }: OngoingSectionProps) {
   return (
     <section id="ongoing" className="py-16 md:py-24">
       <div className="container">
@@ -72,11 +76,13 @@ export default function OngoingSection() {
             );
           })}
         </div>
-        <div className="text-center mt-12">
-            <Button asChild size="lg" variant="outline">
-                <Link href="/ongoing">Lihat Semua</Link>
-            </Button>
-        </div>
+        {ongoingResearches.length > 3 && (
+            <div className="text-center mt-12">
+                <Button asChild size="lg" variant="outline">
+                    <Link href="/ongoing">Lihat Semua</Link>
+                </Button>
+            </div>
+        )}
       </div>
     </section>
   );

@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ongoingResearches } from '@/lib/data';
+import { getHomePageData } from '@/lib/data';
 import { Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -18,7 +18,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-export default function AllOngoingPage() {
+export default async function AllOngoingPage() {
+  const { ongoingResearches } = await getHomePageData();
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />

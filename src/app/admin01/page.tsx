@@ -10,20 +10,25 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BrainCircuit } from 'lucide-react';
 import Logo from '@/components/logo';
-import { opinions, publications, profile, tools, ongoingResearches } from '@/lib/data';
+import { getAllContent, getProfile } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OpinionForm from '@/components/admin/opinion-form';
 import PublicationForm from '@/components/admin/publication-form';
 import OngoingForm from '@/components/admin/ongoing-form';
 import { handleOpinionUpload, handlePublicationUpload, handleOngoingUpload } from '@/lib/actions';
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const [profile, allContent] = await Promise.all([
+    getProfile(),
+    getAllContent()
+  ]);
+
   const profileData = {
     name: profile.name,
     description: profile.description,
-    totalPublications: publications.length,
-    totalOpinions: opinions.length,
-    tools: tools,
+    totalPublications: allContent.filter(c => c.contentType === 'publication').length,
+    totalOpinions: allContent.filter(c => c.contentType === 'opinion').length,
+    tools: profile.tools,
   };
 
   return (

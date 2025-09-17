@@ -1,4 +1,4 @@
-import { opinions } from '@/lib/data';
+import { getHomePageData } from '@/lib/data';
 import OpinionList from '@/components/sections/opinion-list';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-export default function AllOpinionsPage() {
+export default async function AllOpinionsPage() {
+  const { opinions, profile } = await getHomePageData();
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
@@ -27,7 +29,7 @@ export default function AllOpinionsPage() {
             </p>
           </div>
 
-          <OpinionList opinions={opinions} />
+          <OpinionList opinions={opinions} authorName={profile.name} />
         </div>
       </main>
       <Footer />

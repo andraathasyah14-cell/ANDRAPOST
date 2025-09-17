@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import type { PublicationPost } from '@/lib/data';
+import type { PublicationContent } from '@/lib/data';
 import {
   Card,
   CardContent,
@@ -28,21 +28,24 @@ import {
   X,
   FileText,
   User,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import AnimatedCard from '../animated-card';
 
 interface PublicationListProps {
-  publications: PublicationPost[];
+  publications: PublicationContent[];
+  authorName: string;
 }
 
 export default function PublicationList({
   publications,
+  authorName
 }: PublicationListProps) {
-  const [selectedPub, setSelectedPub] = useState<PublicationPost | null>(null);
+  const [selectedPub, setSelectedPub] = useState<PublicationContent | null>(null);
 
-  const handleCardClick = (pub: PublicationPost) => {
+  const handleCardClick = (pub: PublicationContent) => {
     setSelectedPub(pub);
   };
   
@@ -102,12 +105,13 @@ export default function PublicationList({
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <User className="w-4 h-4 mr-2" />
-                  <span>{pub.author}</span>
+                  <span>{authorName}</span>
                 </div>
-                <div className="flex items-center space-x-0">
+                <div className="flex items-center -space-x-2">
                   <Button
                     size="icon"
                     variant="ghost"
+                    title="Lihat Detail"
                     onClick={(e) => handleButtonClick(e, () => setSelectedPub(pub))}
                   >
                     <Eye className="w-4 h-4" />
@@ -117,10 +121,11 @@ export default function PublicationList({
                     variant="ghost"
                     asChild
                     disabled={pub.status === 'private'}
+                    title={pub.status === 'public' ? "Download File" : "Download tidak tersedia"}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Link href={pub.fileUrl}>
-                      <Download className="w-4 h-4" />
+                    <Link href={pub.status === 'public' ? pub.fileUrl : '#'} target="_blank" rel="noopener noreferrer">
+                      {pub.status === 'public' ? <Download className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                     </Link>
                   </Button>
                 </div>
@@ -147,7 +152,7 @@ export default function PublicationList({
                 </div>
                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-2" />
-                  <span>{selectedPub?.author}</span>
+                  <span>{authorName}</span>
                 </div>
                 <div className="flex items-center flex-wrap gap-2">
                   <TagIcon className="w-4 h-4 mr-2" />
@@ -173,20 +178,20 @@ export default function PublicationList({
                 className="flex-1"
                 disabled={selectedPub?.status === 'private'}
               >
-                <Link href={selectedPub?.fileUrl || '#'}>
+                <Link href={selectedPub?.fileUrl || '#'} target="_blank" rel="noopener noreferrer">
                   <Download className="mr-2 h-4 w-4" />
                   Download
                 </Link>
               </Button>
               <Button asChild variant="outline" className="flex-1">
-                <Link href={selectedPub?.viewUrl || '#'}>
+                <Link href={selectedPub?.viewUrl || '#'} target="_blank" rel="noopener noreferrer">
                   <Eye className="mr-2 h-4 w-4" />
                   Lihat Sumber
                 </Link>
               </Button>
             </div>
             {selectedPub?.status === 'private' && (
-              <p className="text-sm text-center text-destructive/80">
+              <p className="text-sm text-center text-destructive/80 p-4 rounded-md bg-destructive/10">
                 This is a private publication and requires special permission
                 to download.
               </p>

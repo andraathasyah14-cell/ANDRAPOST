@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useEffect, useRef } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -17,19 +17,21 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { updateProfile } from '@/lib/actions';
 import { ToolLogos } from '@/components/icons/tool-logos';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 const toolSchema = z.object({
   name: z.string().min(1, 'Nama perkakas harus diisi'),
   icon: z.string().min(1, 'Ikon harus dipilih'),
 });
 
-const profileSchema = z.object({
+const profileFormSchema = z.object({
   name: z.string().min(1, 'Nama harus diisi'),
   description: z.string().min(1, 'Deskripsi harus diisi'),
-  tools: z.array(toolSchema),
+  tools: z.array(toolSchema).min(1, 'Minimal satu perkakas harus ditambahkan'),
 });
 
-type ProfileFormValues = z.infer<typeof profileSchema>;
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 interface ProfileFormProps {
   profileData: {
@@ -53,16 +55,15 @@ function SubmitButton() {
 
 export default function ProfileForm({ profileData }: ProfileFormProps) {
   const { toast } = useToast();
-  const formRef = useRef<HTMLFormElement>(null);
   
   const [state, formAction] = useActionState(updateProfile, { success: false, message: '' });
 
   const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
+    resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: profileData.name,
-      description: profileData.description,
-      tools: profileData.tools,
+      name: profileData.name || '',
+      description: profileData.description || '',
+      tools: profileData.tools || [],
     },
   });
   
@@ -81,7 +82,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     }
   }, [state, toast]);
   
-    // When the profileData prop changes (due to revalidation), reset the form
+  // When the profileData prop changes (due to revalidation), reset the form
   useEffect(() => {
     form.reset({
       name: profileData.name,
@@ -91,6 +92,16 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
   }, [profileData, form]);
 
   const availableIcons = Object.keys(ToolLogos);
+  
+  const handleFormSubmit = (data: ProfileFormValues) => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('description', data.description);
+    data.tools.forEach(tool => {
+        formData.append('tools', JSON.stringify(tool));
+    });
+    formAction(formData);
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -138,21 +149,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
       <div className="lg:col-span-2">
         <Form {...form}>
           <form
-            ref={formRef}
-            action={formAction}
-            onSubmit={form.handleSubmit(() => {
-                const formData = new FormData(formRef.current!);
-                const tools = form.getValues('tools');
-                
-                // Clear previous tools before adding new ones
-                formData.delete('tools');
-                
-                tools.forEach(tool => {
-                    formData.append('tools', JSON.stringify(tool));
-                });
-                
-                formAction(formData);
-            })}
+            onSubmit={form.handleSubmit(handleFormSubmit)}
             className="space-y-8"
           >
             <FormField
@@ -187,8 +184,8 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
               <Label className="mb-4 block">Kelola Perkakas</Label>
               <div className="space-y-4">
                 {fields.map((field, index) => (
-                  <div key={field.id} className="flex items-center gap-4">
-                    <FormField
+                  <div key={field.id} className="flex items-start gap-4">
+                     <FormField
                       control={form.control}
                       name={`tools.${index}.name`}
                       render={({ field }) => (
@@ -200,25 +197,29 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name={`tools.${index}.icon`}
-                      render={({ field }) => (
-                        <FormItem className="flex-grow">
-                           <FormControl>
-                             <select {...field} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                               <option value="">Pilih Ikon</option>
-                               {availableIcons.map(iconName => (
-                                 <option key={iconName} value={iconName}>{iconName}</option>
-                               ))}
-                             </select>
-                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                    <Controller
+                        control={form.control}
+                        name={`tools.${index}.icon`}
+                        render={({ field }) => (
+                            <FormItem className="flex-grow">
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Pilih Ikon" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {availableIcons.map(iconName => (
+                                            <SelectItem key={iconName} value={iconName}>{iconName}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
                     />
                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 ))}
@@ -226,6 +227,11 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Tambah Perkakas
                 </Button>
+                 {form.formState.errors.tools && !form.formState.errors.tools.root && (
+                  <p className="text-sm font-medium text-destructive">
+                    {form.formState.errors.tools.message}
+                  </p>
+                )}
               </div>
             </div>
 

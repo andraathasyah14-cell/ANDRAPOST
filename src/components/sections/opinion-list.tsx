@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import type { OpinionPost } from '@/lib/data';
+import type { OpinionContent } from '@/lib/data';
 import {
   Card,
   CardContent,
@@ -23,11 +23,12 @@ import { Calendar, Tag as TagIcon, User, X } from 'lucide-react';
 import AnimatedCard from '../animated-card';
 
 interface OpinionListProps {
-  opinions: OpinionPost[];
+  opinions: OpinionContent[];
+  authorName: string;
 }
 
-export default function OpinionList({ opinions }: OpinionListProps) {
-  const [selectedOpinion, setSelectedOpinion] = useState<OpinionPost | null>(
+export default function OpinionList({ opinions, authorName }: OpinionListProps) {
+  const [selectedOpinion, setSelectedOpinion] = useState<OpinionContent | null>(
     null
   );
 
@@ -72,7 +73,7 @@ export default function OpinionList({ opinions }: OpinionListProps) {
                 </div>
                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-2" />
-                  <span>{opinion.author}</span>
+                  <span>{authorName}</span>
                 </div>
               </CardFooter>
             </Card>
@@ -97,7 +98,7 @@ export default function OpinionList({ opinions }: OpinionListProps) {
                 </div>
                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-2" />
-                  <span>{selectedOpinion?.author}</span>
+                  <span>{authorName}</span>
                 </div>
                 <div className="flex items-center flex-wrap gap-2">
                   <TagIcon className="w-4 h-4 mr-2" />
@@ -111,7 +112,7 @@ export default function OpinionList({ opinions }: OpinionListProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 py-4 overflow-y-auto flex-grow">
-            <p className="text-base leading-relaxed text-foreground/90">
+            <p className="text-base leading-relaxed text-foreground/90 whitespace-pre-wrap">
               {selectedOpinion?.content}
             </p>
           </div>

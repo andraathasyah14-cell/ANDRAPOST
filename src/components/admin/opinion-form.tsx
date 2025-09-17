@@ -2,7 +2,7 @@
 'use client';
 
 import { useFormState, useFormStatus } from 'react-dom';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,7 +34,7 @@ const initialState = {
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" disabled={pending} className="w-full sm:w-auto">
       {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
       Upload Opini
     </Button>
@@ -44,6 +44,8 @@ function SubmitButton() {
 export default function OpinionForm({ onUpload }: { onUpload: (prevState: any, formData: FormData) => Promise<any> }) {
   const [state, formAction] = useFormState(onUpload, initialState);
   const { toast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
+
 
   useEffect(() => {
     if (state?.message) {
@@ -52,22 +54,18 @@ export default function OpinionForm({ onUpload }: { onUpload: (prevState: any, f
         description: state.message,
         variant: state.success ? 'default' : 'destructive',
       });
+      if (state.success) {
+        formRef.current?.reset();
+      }
     }
   }, [state, toast]);
 
   return (
-    <form action={formAction} className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-            <Label htmlFor="postedOn">Waktu (tanggal dibuat)</Label>
-            <Input id="postedOn" name="postedOn" placeholder="e.g., 25 Juli 2024" />
-            {state?.errors?.postedOn && <p className="text-sm text-destructive">{state.errors.postedOn[0]}</p>}
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="author">Nama Penulis</Label>
-            <Input id="author" name="author" placeholder="Nama Anda" />
-            {state?.errors?.author && <p className="text-sm text-destructive">{state.errors.author[0]}</p>}
-        </div>
+    <form ref={formRef} action={formAction} className="space-y-6">
+      <div className="space-y-2">
+          <Label htmlFor="postedOn">Waktu (tanggal dibuat)</Label>
+          <Input id="postedOn" name="postedOn" type="date" />
+          {state?.errors?.postedOn && <p className="text-sm text-destructive">{state.errors.postedOn[0]}</p>}
       </div>
        <div className="space-y-2">
         <Label htmlFor="title">Judul</Label>
@@ -76,7 +74,7 @@ export default function OpinionForm({ onUpload }: { onUpload: (prevState: any, f
       </div>
       <div className="space-y-2">
         <Label>Tag</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {tags.map((tag) => (
             <div key={tag} className="flex items-center space-x-2">
               <Checkbox id={`tag-${tag}`} name="tags" value={tag} />
@@ -88,7 +86,7 @@ export default function OpinionForm({ onUpload }: { onUpload: (prevState: any, f
       </div>
       <div className="space-y-2">
         <Label htmlFor="content">Isi</Label>
-        <Textarea id="content" name="content" placeholder="Isi lengkap dari opini Anda..." rows={6} />
+        <Textarea id="content" name="content" placeholder="Isi lengkap dari opini Anda..." rows={8} />
         {state?.errors?.content && <p className="text-sm text-destructive">{state.errors.content[0]}</p>}
       </div>
        <div className="space-y-2">

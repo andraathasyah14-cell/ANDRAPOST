@@ -1,12 +1,17 @@
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { publications, opinions, tools, profile } from '@/lib/data';
-
 import { BookOpen, MessageSquare } from 'lucide-react';
 import { ToolLogos } from '../icons/tool-logos';
+import type { OpinionContent, PublicationContent, Profile } from '@/lib/data';
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  profile: Profile;
+  opinions: OpinionContent[];
+  publications: PublicationContent[];
+}
+
+export default function HeroSection({ profile, opinions, publications }: HeroSectionProps) {
   const profileImage = PlaceHolderImages.find((p) => p.id === 'profile');
   const totalPublications = publications.length;
   const totalOpinions = opinions.length;
@@ -24,6 +29,7 @@ export default function HeroSection() {
                 height={250}
                 data-ai-hint={profileImage.imageHint}
                 className="rounded-full aspect-square object-cover border-4 border-background shadow-lg"
+                priority // Prioritize loading the hero image
               />
             )}
           </div>
@@ -71,7 +77,7 @@ export default function HeroSection() {
           <Card className="shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 md:gap-x-12">
-                {tools.map((tool) => {
+                {profile.tools.map((tool) => {
                   const Icon = ToolLogos[tool.icon as keyof typeof ToolLogos];
                   return (
                     <div
