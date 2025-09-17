@@ -34,32 +34,49 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (!isInitiallyLoading) {
-      if (!user?.isAdmin) {
-        router.replace('/login');
-      } else {
-        const fetchData = async () => {
-          setIsLoading(true);
-          const [profileData, contentData] = await Promise.all([
-            getProfile(),
-            getAllContent()
-          ]);
-          setProfile(profileData);
-          setAllContent(contentData);
-          setIsLoading(false);
-        };
-        fetchData();
-      }
+    // Jangan lakukan apa pun sampai status auth awal selesai diperiksa.
+    if (isInitiallyLoading) {
+      return;
+    }
+
+    // Setelah status auth diketahui, periksa apakah pengguna adalah admin.
+    if (user?.isAdmin) {
+      // Jika ya, muat data yang diperlukan untuk panel admin.
+      const fetchData = async () => {
+        setIsLoading(true);
+        const [profileData, contentData] = await Promise.all([
+          getProfile(),
+          getAllContent()
+        ]);
+        setProfile(profileData);
+        setAllContent(contentData);
+        setIsLoading(false);
+      };
+      fetchData();
+    } else {
+      // Jika tidak, arahkan pengguna ke halaman login.
+      router.replace('/login');
     }
   }, [user, isInitiallyLoading, router]);
 
-  if (isInitiallyLoading || isLoading || !profile) {
+  // Tampilkan loader jika auth masih diperiksa, atau jika data sedang dimuat, atau jika profil belum ada.
+  if (isInitiallyLoading || isLoading || !user?.isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
+  
+  // Jika profil masih null setelah loading selesai (kasus langka), tampilkan loader juga.
+  if (!profile) {
+     return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   const profileData = {
     name: profile.name,
