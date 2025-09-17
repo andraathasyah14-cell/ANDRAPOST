@@ -1,4 +1,3 @@
-// src/lib/storage.ts
 'use client';
 
 import { getSignedUploadUrl } from '@/lib/actions';
@@ -27,14 +26,16 @@ export function handleImageUpload(
 
     try {
       // 1. Get the signed URL from the server
-      const { signedUrl, publicUrl } = await getSignedUploadUrl({
+      const result = await getSignedUploadUrl({
         fileName: file.name,
         fileType: file.type,
       });
 
-      if (!signedUrl || !publicUrl) {
-        throw new Error('Failed to get a signed URL from the server.');
+      if (!result.success) {
+        throw new Error(result.error);
       }
+      
+      const { signedUrl, publicUrl } = result;
 
       // 2. Upload the file to the signed URL using fetch with progress tracking
       const xhr = new XMLHttpRequest();

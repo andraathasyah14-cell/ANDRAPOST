@@ -8,21 +8,25 @@ import { saveFeedback } from '@/ai/flows/save-feedback';
 
 
 // --- GET SIGNED UPLOAD URL ACTION ---
-// New, more robust upload method using signed URLs
 const getSignedUrlSchema = z.object({
   fileName: z.string(),
   fileType: z.string(),
 });
 
-export async function getSignedUploadUrl(input: {fileName: string, fileType: string}) {
+type SignedUrlResult = 
+  | { success: true; signedUrl: string; publicUrl: string }
+  | { success: false; error: string };
+
+export async function getSignedUploadUrl(input: {fileName: string, fileType: string}): Promise<SignedUrlResult> {
   if (!admin || !db) {
-    throw new Error('Firebase Admin is not initialized. Cannot get signed URL.');
+    console.error('Firebase Admin is not initialized. Cannot get signed URL.');
+    return { success: false, error: 'Firebase Admin is not initialized. Cannot get signed URL.' };
   }
 
   const validatedFields = getSignedUrlSchema.safeParse(input);
 
   if (!validatedFields.success) {
-    throw new Error('Invalid input for getting signed URL.');
+     return { success: false, error: 'Invalid input for getting signed URL.' };
   }
 
   const { fileName, fileType } = validatedFields.data;
@@ -42,10 +46,10 @@ export async function getSignedUploadUrl(input: {fileName: string, fileType: str
 
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
     
-    return { signedUrl, publicUrl };
+    return { success: true, signedUrl, publicUrl };
   } catch (error) {
     console.error('Error getting signed URL:', error);
-    throw new Error('Could not get signed URL.');
+    return { success: false, error: 'Could not get signed URL from server.' };
   }
 }
 
@@ -320,7 +324,13 @@ export async function handleFeedbackSubmit(prevState: any, formData: FormData) {
   }
 
   try {
-    await saveFeedback(validatedFields.data);
+    const {success} = await saveFeedback(validatedFields.data);
+    if (!success) {
+        return {
+          success: false, message: 'Gagal mengirim pesan karena masalah server. Silakan coba lagi nanti.',
+          errors: null,
+        };
+    }
     return {
       success: true, message: 'Terima kasih! Pesan Anda telah terkirim.',
       errors: null,
