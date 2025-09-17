@@ -1,3 +1,118 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "profile",
+      "description": "A professional headshot of a person smiling.",
+      "imageUrl": "https://picsum.photos/seed/profile/400/400",
+      "imageHint": "professional headshot"
+    },
+    {
+      "id": "opinion1",
+      "description": "A person writing at a desk with a blurred background.",
+      "imageUrl": "https://picsum.photos/seed/opinion1/600/400",
+      "imageHint": "writing desk"
+    },
+    {
+      "id": "opinion2",
+      "description": "A close-up of a vintage typewriter.",
+      "imageUrl": "https://picsum.photos/seed/opinion2/600/400",
+      "imageHint": "vintage typewriter"
+    },
+    {
+      "id": "opinion3",
+      "description": "A collection of newspapers stacked on a table.",
+      "imageUrl": "https://picsum.photos/seed/opinion3/600/400",
+      "imageHint": "newspapers stack"
+    },
+    {
+      "id": "opinion4",
+      "description": "A person holding a tablet showing graphs.",
+      "imageUrl": "https://picsum.photos/seed/opinion4/600/400",
+      "imageHint": "tablet graphs"
+    },
+    {
+      "id": "opinion5",
+      "description": "A city skyline at dusk.",
+      "imageUrl": "https://picsum.photos/seed/opinion5/600/400",
+      "imageHint": "city skyline"
+    },
+    {
+      "id": "opinion6",
+      "description": "A public speaking event with a person on stage.",
+      "imageUrl": "https://picsum.photos/seed/opinion6/600/400",
+      "imageHint": "public speaking"
+    },
+    {
+      "id": "publication1",
+      "description": "A stack of academic journals.",
+      "imageUrl": "https://picsum.photos/seed/pub1/600/400",
+      "imageHint": "academic journals"
+    },
+    {
+      "id": "publication2",
+      "description": "An open book on a library table.",
+      "imageUrl": "https://picsum.photos/seed/pub2/600/400",
+      "imageHint": "open book"
+    },
+    {
+      "id": "publication3",
+      "description": "A scientific laboratory with equipment.",
+      "imageUrl": "https://picsum.photos/seed/pub3/600/400",
+      "imageHint": "science laboratory"
+    },
+    {
+      "id": "publication4",
+      "description": "A person presenting a poster at a conference.",
+      "imageUrl": "https://picsum.photos/seed/pub4/600/400",
+      "imageHint": "conference poster"
+    },
+    {
+      "id": "publication5",
+      "description": "A satellite image of Earth.",
+      "imageUrl": "https://picsum.photos/seed/pub5/600/400",
+      "imageHint": "earth satellite"
+    },
+    {
+      "id": "publication6",
+      "description": "A historical document with a quill.",
+      "imageUrl": "https://picsum.photos/seed/pub6/600/400",
+      "imageHint": "historical document"
+    },
+    {
+      "id": "ongoing1",
+      "description": "A whiteboard covered in complex equations.",
+      "imageUrl": "https://picsum.photos/seed/ongoing1/600/400",
+      "imageHint": "whiteboard equations"
+    },
+    {
+      "id": "ongoing2",
+      "description": "Data visualization on a computer screen.",
+      "imageUrl": "https://picsum.photos/seed/ongoing2/600/400",
+      "imageHint": "data visualization"
+    },
+    {
+      "id": "ongoing3",
+      "description": "Field research in a natural landscape.",
+      "imageUrl": "https://picsum.photos/seed/ongoing3/600/400",
+      "imageHint": "field research"
+    },
+    {
+      "id": "ongoing4",
+      "description": "A team collaborating around a table.",
+      "imageUrl": "https://picsum.photos/seed/ongoing4/600/400",
+      "imageHint": "team collaboration"
+    },
+    {
+      "id": "ongoing5",
+      "description": "A microscope in a research lab.",
+      "imageUrl": "https://picsum.photos/seed/ongoing5/600/400",
+      "imageHint": "microscope lab"
+    },
+    {
+      "id": "ongoing6",
+      "description": "A drone flying over a landscape.",
+      "imageUrl": "https://picsum.photos/seed/ongoing6/600/400",
+      "imageHint": "drone landscape"
+    }
+  ]
 }
