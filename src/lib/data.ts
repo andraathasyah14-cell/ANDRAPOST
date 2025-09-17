@@ -61,16 +61,30 @@ export interface Profile {
 
 const allImages = PlaceHolderImages;
 
-// The issue is that the image objects in your JSON data files are just strings, 
-// but the application expects them to be objects with an id, description, imageUrl, and imageHint.
-const mapData = (item: any) => ({
-  ...item,
-  image: allImages.find(i => i.id === item.image)!,
-  ...(item.startedOn && { startedOn: new Date(item.startedOn) }),
+const mapDataWithImage = (data: any[]) => data.map(item => {
+    const image = allImages.find(i => i.id === item.image);
+    if (!image) {
+        console.warn(`Image with id "${item.image}" not found. Assigning a default placeholder.`);
+        // Assign a default placeholder if not found, to prevent crashes
+        const defaultImage = allImages[0] || { id: 'default', description: 'Default Image', imageUrl: 'https://placehold.co/600x400', imageHint: 'placeholder' };
+        return { ...item, image: defaultImage };
+    }
+    return { ...item, image };
 });
 
-export const opinions: OpinionPost[] = opinionsData.map(mapData);
-export const publications: PublicationPost[] = publicationsData.map(mapData);
-export const ongoingResearches: OngoingResearch[] = ongoingData.map(mapData);
+const mapOngoingData = (data: any[]) => data.map(item => {
+    const image = allImages.find(i => i.id === item.image);
+    const mappedItem = {
+      ...item,
+      image: image || allImages[0], // fallback to default
+      startedOn: new Date(item.startedOn),
+    };
+    return mappedItem;
+});
+
+
+export const opinions: OpinionPost[] = mapDataWithImage(opinionsData);
+export const publications: PublicationPost[] = mapDataWithImage(publicationsData);
+export const ongoingResearches: OngoingResearch[] = mapOngoingData(ongoingData);
 export const tools: Tool[] = toolsData;
 export const profile: Profile = profileData;

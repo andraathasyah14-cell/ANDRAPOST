@@ -10,10 +10,12 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BrainCircuit } from 'lucide-react';
 import Logo from '@/components/logo';
-import { opinions, publications, profile, tools } from '@/lib/data';
+import { opinions, publications, profile, tools, ongoingResearches } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OpinionForm from '@/components/admin/opinion-form';
-import { handleOpinionUpload } from '@/lib/actions';
+import PublicationForm from '@/components/admin/publication-form';
+import OngoingForm from '@/components/admin/ongoing-form';
+import { handleOpinionUpload, handlePublicationUpload, handleOngoingUpload } from '@/lib/actions';
 
 export default function AdminPage() {
   const profileData = {
@@ -88,10 +90,10 @@ export default function AdminPage() {
                 <Tabs defaultValue="opinion" className="w-full">
                   <TabsList>
                     <TabsTrigger value="opinion">Upload Opini</TabsTrigger>
-                    <TabsTrigger value="publication" disabled>
+                    <TabsTrigger value="publication">
                       Upload Publikasi
                     </TabsTrigger>
-                    <TabsTrigger value="ongoing" disabled>
+                    <TabsTrigger value="ongoing">
                       Upload Ongoing
                     </TabsTrigger>
                   </TabsList>
@@ -99,6 +101,18 @@ export default function AdminPage() {
                     <div className="p-4 border rounded-lg mt-4">
                        <h3 className="text-lg font-semibold mb-2">Upload New Opinion</h3>
                       <OpinionForm onUpload={handleOpinionUpload} />
+                    </div>
+                  </TabsContent>
+                   <TabsContent value="publication">
+                    <div className="p-4 border rounded-lg mt-4">
+                       <h3 className="text-lg font-semibold mb-2">Upload New Publication</h3>
+                      <PublicationForm onUpload={handlePublicationUpload} />
+                    </div>
+                  </TabsContent>
+                   <TabsContent value="ongoing">
+                    <div className="p-4 border rounded-lg mt-4">
+                       <h3 className="text-lg font-semibold mb-2">Upload New Ongoing Research</h3>
+                      <OngoingForm onUpload={handleOngoingUpload} />
                     </div>
                   </TabsContent>
                 </Tabs>

@@ -124,7 +124,6 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
 
         const newId = `opini${String(opinions.length + 1).padStart(2, '0')}`;
         
-        // Check if image id exists in placeholder images
         const imageExists = PlaceHolderImages.some(img => img.id === validatedFields.data.image);
         if (!imageExists) {
             return {
@@ -152,5 +151,149 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
     } catch (error) {
         console.error('Error uploading opinion:', error);
         return { success: false, message: 'Gagal menambahkan opini.', errors: null };
+    }
+}
+
+const publicationSchema = z.object({
+    publishedOn: z.string().min(1, "Waktu harus diisi"),
+    author: z.string().min(1, "Nama penulis harus diisi"),
+    title: z.string().min(1, "Judul harus diisi"),
+    tags: z.array(z.string()).min(1, "Pilih setidaknya satu tag"),
+    description: z.string().min(1, "Deskripsi tidak boleh kosong"),
+    fileUrl: z.string().min(1, "File URL tidak boleh kosong"),
+    status: z.enum(['public', 'private']),
+    image: z.string().min(1, "Gambar harus diisi"),
+});
+
+export async function handlePublicationUpload(prevState: any, formData: FormData) {
+    const validatedFields = publicationSchema.safeParse({
+        publishedOn: formData.get('publishedOn'),
+        author: formData.get('author'),
+        title: formData.get('title'),
+        tags: formData.getAll('tags'),
+        description: formData.get('description'),
+        fileUrl: formData.get('fileUrl'),
+        status: formData.get('status'),
+        image: formData.get('image'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            success: false,
+            message: 'Validation failed',
+            errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+    
+    try {
+        const publicationsPath = path.join(process.cwd(), 'src', 'content', 'publications.json');
+        const publicationsJson = await fs.readFile(publicationsPath, 'utf-8');
+        const publications = JSON.parse(publicationsJson);
+
+        const newId = `publikasi${String(publications.length + 1).padStart(2, '0')}`;
+        
+        const imageExists = PlaceHolderImages.some(img => img.id === validatedFields.data.image);
+        if (!imageExists) {
+            return {
+                success: false,
+                message: "Image ID not found.",
+                errors: { image: ['Please provide a valid Image ID from the available list.'] }
+            };
+        }
+
+        const newPublication = {
+            id: newId,
+            ...validatedFields.data,
+            viewUrl: "#", // Add a default viewUrl
+        };
+
+        publications.push(newPublication);
+
+        await fs.writeFile(publicationsPath, JSON.stringify(publications, null, 2));
+
+        revalidatePath('/');
+        revalidatePath('/publikasi');
+        revalidatePath('/admin01');
+        
+        return { success: true, message: 'Publikasi berhasil ditambahkan!', errors: null };
+
+    } catch (error) {
+        console.error('Error uploading publication:', error);
+        return { success: false, message: 'Gagal menambahkan publikasi.', errors: null };
+    }
+}
+
+const ongoingSchema = z.object({
+    startedOn: z.string().min(1, "Tanggal mulai harus diisi"),
+    author: z.string().min(1, "Nama penulis harus diisi"),
+    title: z.string().min(1, "Judul harus diisi"),
+    tags: z.array(z.string()).min(1, "Pilih setidaknya satu tag"),
+    description: z.string().min(1, "Deskripsi tidak boleh kosong"),
+    image: z.string().min(1, "Gambar harus diisi"),
+});
+
+export async function handleOngoingUpload(prevState: any, formData: FormData) {
+    const validatedFields = ongoingSchema.safeParse({
+        startedOn: formData.get('startedOn'),
+        author: formData.get('author'),
+        title: formData.get('title'),
+        tags: formData.getAll('tags'),
+        description: formData.get('description'),
+        image: formData.get('image'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            success: false,
+            message: 'Validation failed',
+            errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+    
+    try {
+        const ongoingPath = path.join(process.cwd(), 'src', 'content', 'ongoing.json');
+        const ongoingJson = await fs.readFile(ongoingPath, 'utf-8');
+        const ongoingItems = JSON.parse(ongoingJson);
+
+        const newId = `ongoing${String(ongoingItems.length + 1).padStart(2, '0')}`;
+        
+        const imageExists = PlaceHolderImages.some(img => img.id === validatedFields.data.image);
+        if (!imageExists) {
+            return {
+                success: false,
+                message: "Image ID not found.",
+                errors: { image: ['Please provide a valid Image ID from the available list.'] }
+            };
+        }
+        
+        const startedOnDate = new Date(validatedFields.data.startedOn).toISOString();
+        if (isNaN(new Date(startedOnDate).getTime())) {
+             return {
+                success: false,
+                message: 'Invalid date format for startedOn',
+                errors: { startedOn: ['Format tanggal tidak valid. Gunakan YYYY-MM-DD.'] },
+            };
+        }
+
+
+        const newOngoing = {
+            id: newId,
+            ...validatedFields.data,
+            startedOn: startedOnDate,
+        };
+
+        ongoingItems.push(newOngoing);
+
+        await fs.writeFile(ongoingPath, JSON.stringify(ongoingItems, null, 2));
+
+        revalidatePath('/');
+        revalidatePath('/ongoing');
+        revalidatePath('/admin01');
+        
+        return { success: true, message: 'Ongoing research berhasil ditambahkan!', errors: null };
+
+    } catch (error) {
+        console.error('Error uploading ongoing research:', error);
+        return { success: false, message: 'Gagal menambahkan ongoing research.', errors: null };
     }
 }
