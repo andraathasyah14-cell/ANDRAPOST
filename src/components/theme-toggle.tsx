@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -9,7 +9,18 @@ import { Label } from '@/components/ui/label';
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
+  // useEffect only runs on the client, so now we can safely show the UI
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    // Render a placeholder or null on the server and initial client render
+    return <div className="flex items-center space-x-2 h-6 w-[58px]" />;
+  }
+  
   const isDarkMode = theme === 'dark';
 
   const toggleTheme = () => {
