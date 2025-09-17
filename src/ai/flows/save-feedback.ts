@@ -8,7 +8,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-// import { db } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase-admin';
 
 const SaveFeedbackInputSchema = z.object({
   name: z.string().describe('The name of the person giving feedback.'),
@@ -30,11 +30,11 @@ const saveFeedbackFlow = ai.defineFlow(
   },
   async input => {
     // Database functionality is temporarily disabled.
-    console.log("Feedback received, but database is disabled:", input);
-    // await db.collection('feedback').add({
-    //   ...input,
-    //   createdAt: new Date().toISOString(),
-    // });
+    console.log("Feedback received, saving to database:", input);
+    await db.collection('feedback').add({
+      ...input,
+      createdAt: new Date().toISOString(),
+    });
     return {success: true};
   }
 );
