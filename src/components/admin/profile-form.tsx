@@ -116,7 +116,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
               alt="Profile"
               width={150}
               height={150}
-              className="rounded-full aspect-square object-cover border-4 border-background shadow-lg"
+              className="rounded-lg aspect-square object-cover border-4 border-background shadow-lg"
             />
              <p className="text-sm text-center text-muted-foreground">
               Pengunggahan foto profil hanya untuk demonstrasi dan tidak terhubung ke server.

@@ -28,7 +28,7 @@ export default function HeroSection({ profile, opinions, publications }: HeroSec
                 width={250}
                 height={250}
                 data-ai-hint={profileImage.imageHint}
-                className="rounded-full aspect-square object-cover border-4 border-background shadow-lg"
+                className="rounded-lg aspect-square object-cover border-4 border-background shadow-lg"
                 priority // Prioritize loading the hero image
               />
             )}
