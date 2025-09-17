@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/logo';
 import { handleLogin } from '@/lib/actions';
 import Cookies from 'js-cookie';
+import { useAuth } from '@/components/auth-provider';
 
 const initialState = {
     success: false,
@@ -36,35 +37,51 @@ function SubmitButton() {
 
 
 export default function LoginPage() {
+  const { user, isInitiallyLoading } = useAuth();
   const [state, formAction] = useActionState(handleLogin, initialState);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
   useEffect(() => {
-    // If the server-side validation was successful, set the client-side cookie
+    if (isInitiallyLoading) {
+      return; // Wait until auth state is confirmed
+    }
+
+    // 1. If user is already authenticated (e.g., from a previous session), redirect them.
+    if (user?.isAdmin) {
+      router.replace('/admin01');
+      return;
+    }
+
+    // 2. Handle the result of the login form submission.
     if (state.success) {
-      Cookies.set('__session', 'true', { expires: 5, path: '/' });
+      // Set the session cookie. The AuthProvider will detect this change and update the user state.
+      Cookies.set('__session', 'true', { expires: 5, path: '/' }); 
+      
+      // Now redirect.
       const redirectUrl = searchParams.get('redirect') || '/admin01';
       router.push(redirectUrl);
-      router.refresh(); // Refresh to update auth state across the app
+      router.refresh(); // Crucial to update server-recognized state and re-render header, etc.
     } else if (state.message) {
-      // If there's an error message from the server, show it
+      // 3. If there's an error message from the server, show it.
       toast({
         title: 'Login Gagal',
         description: state.message,
         variant: 'destructive',
       });
     }
-  }, [state, router, searchParams, toast]);
+  }, [state, user, isInitiallyLoading, router, searchParams, toast]);
   
-  // Redirect if already logged in
-  useEffect(() => {
-    if (Cookies.get('__session')) {
-      router.replace('/admin01');
-    }
-  }, [router]);
 
+  // Show a loading state or nothing until auth is checked
+  if (isInitiallyLoading || user) {
+     return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
