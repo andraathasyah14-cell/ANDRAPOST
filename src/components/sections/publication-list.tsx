@@ -54,7 +54,7 @@ export default function PublicationList({
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {publications.slice(0, 6).map((pub) => (
+        {publications.map((pub) => (
           <AnimatedCard key={pub.id}>
             <Card
               className="flex flex-col overflow-hidden transition-shadow duration-300 hover:shadow-xl group h-full cursor-pointer"

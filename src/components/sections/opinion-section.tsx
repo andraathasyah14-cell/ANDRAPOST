@@ -15,11 +15,11 @@ export default function OpinionSection() {
           </p>
         </div>
 
-        <OpinionList opinions={opinions} />
+        <OpinionList opinions={opinions.slice(0, 6)} />
 
         <div className="text-center mt-12">
           <Button asChild size="lg" variant="outline">
-            <Link href="#">Baca Selengkapnya</Link>
+            <Link href="/opini">Baca Selengkapnya</Link>
           </Button>
         </div>
       </div>

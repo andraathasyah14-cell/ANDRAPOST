@@ -11,26 +11,36 @@ import { ongoingResearches } from '@/lib/data';
 import { Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
-import AnimatedCard from '../animated-card';
+import AnimatedCard from '@/components/animated-card';
+import Header from '@/components/header';
+import Footer from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
-export default function OngoingSection() {
+export default function AllOngoingPage() {
   return (
-    <section id="ongoing" className="py-16 md:py-24">
-      <div className="container">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold font-headline">
-            Ongoing Research
-          </h2>
-          <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
-            A glimpse into my current research endeavors and projects under
-            development.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {ongoingResearches.slice(0, 3).map((research) => {
+    <div className="flex flex-col min-h-screen bg-background">
+      <Header />
+      <main className="flex-grow py-16 md:py-24">
+        <div className="container">
+          <div className="relative mb-12 text-center">
+             <div className="absolute top-0 left-0">
+                <Button asChild variant="ghost">
+                    <Link href="/">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Kembali ke Beranda
+                    </Link>
+                </Button>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold font-headline">Semua Riset Ongoing</h1>
+            <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
+              Sekilas tentang upaya penelitian saya saat ini dan proyek yang sedang dikembangkan.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {ongoingResearches.map((research) => {
             const runningTime = `Berjalan ${formatDistanceToNow(research.startedOn, { locale: id })}`;
 
             return (
@@ -72,12 +82,9 @@ export default function OngoingSection() {
             );
           })}
         </div>
-        <div className="text-center mt-12">
-            <Button asChild size="lg" variant="outline">
-                <Link href="/ongoing">Lihat Semua</Link>
-            </Button>
         </div>
-      </div>
-    </section>
+      </main>
+      <Footer />
+    </div>
   );
 }

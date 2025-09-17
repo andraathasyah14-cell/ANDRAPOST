@@ -17,11 +17,11 @@ export default function PublicationSection() {
           </p>
         </div>
 
-        <PublicationList publications={publications} />
+        <PublicationList publications={publications.slice(0, 6)} />
 
         <div className="text-center mt-12">
           <Button asChild size="lg">
-            <Link href="#">Selengkapnya</Link>
+            <Link href="/publikasi">Selengkapnya</Link>
           </Button>
         </div>
       </div>
