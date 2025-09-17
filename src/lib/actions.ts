@@ -11,7 +11,6 @@ import { getStorage as getAdminStorage } from 'firebase-admin/storage';
 
 
 // --- FIREBASE ADMIN INITIALIZATION (SERVER-SIDE) ---
-// This ensures Firebase Admin is initialized only once.
 if (!getApps().length) {
   initializeApp({
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -20,7 +19,6 @@ if (!getApps().length) {
   console.log("Firebase Admin SDK initialized on the server.");
 }
 const db = getFirestore();
-// adminStorage is intentionally not used for uploads anymore due to instability.
 
 
 // --- AUTH HELPER ---
@@ -28,20 +26,20 @@ import { cookies } from 'next/headers';
 async function verifyAuth() {
   const sessionCookie = cookies().get('__session')?.value;
   if (!sessionCookie) {
-    throw new Error('Unauthorized: No session cookie.');
+    throw new Error('Unauthorized: No session cookie found.');
   }
    if (sessionCookie !== process.env.ADMIN_SESSION_SECRET) {
     throw new Error('Unauthorized: Invalid session secret.');
   }
+  // This is a simplified check. In a real-world scenario, you'd verify a JWT or session token.
 }
 
 // --- LOGIN ACTION ---
-// This has been simplified and does not use Firebase Auth anymore.
-
 const loginSchema = z.object({
   code: z.string().min(1, "Kode akses harus diisi."),
 });
 
+// This action now only validates the code. Cookie handling is moved to the client.
 export async function handleLogin(prevState: any, formData: FormData) {
     const validatedFields = loginSchema.safeParse({
         code: formData.get('code'),
@@ -51,31 +49,23 @@ export async function handleLogin(prevState: any, formData: FormData) {
         return { success: false, message: 'Validasi gagal.', errors: validatedFields.error.flatten().fieldErrors };
     }
     
-    // Check against the environment variable
     if (validatedFields.data.code !== process.env.ADMIN_ACCESS_CODE) {
         return { success: false, message: 'Kode akses salah.', errors: null };
     }
 
-    const sessionSecret = process.env.ADMIN_SESSION_SECRET;
-    if (!sessionSecret) {
-        console.error("FATAL: ADMIN_SESSION_SECRET is not set in .env");
-        return { success: false, message: 'Konfigurasi server error.', errors: null };
-    }
+    // On successful validation, we set a temporary cookie that the client can read.
+    // The client-side code will then set its own long-term cookie.
+    cookies().set('auth_success', 'true', { maxAge: 10 });
 
-    cookies().set('__session', sessionSecret, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 5, // 5 days
-        path: '/',
-    });
-    
-    return { success: true, message: 'Login Berhasil!', errors: null };
+
+    return { success: true, message: 'Validasi berhasil!', errors: null };
 }
 
 // --- LOGOUT ACTION ---
+// This server action is now primarily for revalidation, cookie is cleared client-side.
 export async function handleLogout() {
     cookies().delete('__session');
-    revalidatePath('/'); // Revalidate to clear server-side caches
+    revalidatePath('/');
     revalidatePath('/admin01');
 }
 

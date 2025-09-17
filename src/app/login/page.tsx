@@ -1,4 +1,4 @@
-// src/app/login/page.tsx
+
 'use client';
 
 import { useActionState, useEffect } from 'react';
@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/logo';
 import { handleLogin } from '@/lib/actions';
+import Cookies from 'js-cookie';
 
 const initialState = {
     success: false,
@@ -41,15 +42,14 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // If login is successful, redirect immediately. This is the highest priority.
+    // If the server-side validation was successful, set the client-side cookie
     if (state.success) {
+      Cookies.set('__session', 'true', { expires: 5, path: '/' });
       const redirectUrl = searchParams.get('redirect') || '/admin01';
-      router.replace(redirectUrl);
-      return; // Stop further execution in this effect
-    }
-
-    // If there's a message (and it was not a success), show a toast.
-    if (state.message) {
+      router.push(redirectUrl);
+      router.refresh(); // Refresh to update auth state across the app
+    } else if (state.message) {
+      // If there's an error message from the server, show it
       toast({
         title: 'Login Gagal',
         description: state.message,
@@ -57,6 +57,14 @@ export default function LoginPage() {
       });
     }
   }, [state, router, searchParams, toast]);
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (Cookies.get('__session')) {
+      router.replace('/admin01');
+    }
+  }, [router]);
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">

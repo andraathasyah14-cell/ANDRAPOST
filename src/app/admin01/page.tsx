@@ -1,4 +1,6 @@
 
+'use client';
+
 import ProfileForm from '@/components/admin/profile-form';
 import {
   Card,
@@ -9,21 +11,55 @@ import {
 } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BrainCircuit } from 'lucide-react';
+import { ArrowLeft, BrainCircuit, Loader2 } from 'lucide-react';
 import Logo from '@/components/logo';
-import { getAllContent, getProfile, type OpinionContent, type PublicationContent, type OngoingContent } from '@/lib/data';
+import { getAllContent, getProfile, type OpinionContent, type PublicationContent, type OngoingContent, type Profile } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OpinionForm from '@/components/admin/opinion-form';
 import PublicationForm from '@/components/admin/publication-form';
 import OngoingForm from '@/components/admin/ongoing-form';
 import { handleOpinionUpload, handlePublicationUpload, handleOngoingUpload } from '@/lib/actions';
 import ContentList from '@/components/admin/content-list';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/components/auth-provider';
+import { useRouter } from 'next/navigation';
 
-export default async function AdminPage() {
-  const [profile, allContent] = await Promise.all([
-    getProfile(),
-    getAllContent()
-  ]);
+type ContentPost = OpinionContent | PublicationContent | OngoingContent;
+
+export default function AdminPage() {
+  const { user, isInitiallyLoading } = useAuth();
+  const router = useRouter();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [allContent, setAllContent] = useState<ContentPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    if (!isInitiallyLoading) {
+      if (!user?.isAdmin) {
+        router.replace('/login');
+      } else {
+        const fetchData = async () => {
+          setIsLoading(true);
+          const [profileData, contentData] = await Promise.all([
+            getProfile(),
+            getAllContent()
+          ]);
+          setProfile(profileData);
+          setAllContent(contentData);
+          setIsLoading(false);
+        };
+        fetchData();
+      }
+    }
+  }, [user, isInitiallyLoading, router]);
+
+  if (isInitiallyLoading || isLoading || !profile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const profileData = {
     name: profile.name,
@@ -135,7 +171,7 @@ export default async function AdminPage() {
            <TabsContent value="edit">
             <Card>
               <CardHeader>
-                <CardTitle>Edit & Delete Content</CardTitle>
+                <CardTitle>Edit &amp; Delete Content</CardTitle>
                 <CardDescription>
                   Review, edit, or delete your existing content here.
                 </CardDescription>

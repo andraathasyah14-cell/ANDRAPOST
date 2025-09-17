@@ -16,13 +16,14 @@ import { ThemeToggle } from './theme-toggle';
 import { navLinks } from './main-nav';
 import { useAuth } from './auth-provider';
 import Link from 'next/link';
-import { handleLogout } from '@/lib/actions';
 import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
+
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { user, loading, isInitiallyLoading } = useAuth();
+  const { user, isInitiallyLoading } = useAuth();
   const router = useRouter();
 
 
@@ -31,33 +32,31 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    // This component is client-side, so window is available.
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Check on initial render
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
   const handleLinkClick = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      // 80px offset for the header height
       const y = element.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
     setMobileNavOpen(false);
   };
 
-  const onLogout = async () => {
-    await handleLogout();
+  const onLogout = () => {
+    Cookies.remove('__session', { path: '/' });
     router.push('/');
-    router.refresh(); // Force a refresh to update auth state across the app
+    router.refresh();
   };
   
   const AuthButton = () => {
     if (isInitiallyLoading) {
       return <div className="h-9 w-24 rounded-md animate-pulse bg-muted"></div>
     }
-    if(user) {
+    if(user?.isAdmin) {
       return (
         <div className="flex items-center gap-2">
           <Button asChild>
