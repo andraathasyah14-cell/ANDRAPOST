@@ -13,10 +13,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/logo';
 
+// --- Kredensial Admin ---
+// PERINGATAN: Menyimpan kredensial di dalam kode sumber seperti ini tidak aman.
+// Ini sebaiknya hanya digunakan untuk pengembangan.
+const ADMIN_EMAIL = 'diandra.athasyah@gmail.com';
+const ADMIN_PASS = 'rahasia090107';
+const ACCESS_CODE = '090107';
+// -------------------------
+
 export default function LoginPage() {
   const { signIn, loading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -25,20 +32,33 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (code !== ACCESS_CODE) {
+      const friendlyMessage = 'Kode akses salah. Silakan periksa kembali.';
+      setError(friendlyMessage);
+      toast({
+        title: 'Login Gagal',
+        description: friendlyMessage,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      await signIn(email, password);
+      // Jika kode benar, login menggunakan kredensial admin yang sudah ditentukan
+      await signIn(ADMIN_EMAIL, ADMIN_PASS);
+      
       const redirectUrl = searchParams.get('redirect') || '/admin01';
       toast({
         title: 'Login Berhasil!',
         description: `Selamat datang kembali! Anda akan diarahkan ke ${redirectUrl}`,
       });
       router.push(redirectUrl);
+
     } catch (err: any) {
-      let friendlyMessage = 'Terjadi kesalahan. Silakan coba lagi.';
-      if (err.code === 'auth/invalid-credential') {
-        friendlyMessage = 'Email atau kata sandi salah. Silakan periksa kembali.';
-      } else if (err.code === 'auth/invalid-email') {
-        friendlyMessage = 'Format email tidak valid.';
+      let friendlyMessage = 'Terjadi kesalahan. Kredensial admin internal mungkin salah atau akun tidak ada.';
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+        friendlyMessage = 'Kredensial admin internal salah. Hubungi developer.';
       }
       setError(friendlyMessage);
       toast({
@@ -61,29 +81,18 @@ export default function LoginPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Login</CardTitle>
-            <CardDescription>Masukkan kredensial Anda untuk mengakses panel admin.</CardDescription>
+            <CardDescription>Masukkan kode akses untuk masuk ke panel admin.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="access-code">Kode Akses</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
+                  id="access-code"
                   type="password"
-                  placeholder="********"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="******"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
                   required
                 />
               </div>
@@ -94,7 +103,7 @@ export default function LoginPage() {
                 ) : (
                   <LogIn className="mr-2 h-4 w-4" />
                 )}
-                Login
+                Masuk
               </Button>
             </form>
           </CardContent>
