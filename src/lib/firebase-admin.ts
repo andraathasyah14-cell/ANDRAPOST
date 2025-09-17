@@ -9,6 +9,7 @@ import admin from 'firebase-admin';
 interface FirebaseAdmin {
   db: admin.firestore.Firestore;
   storage: admin.storage.Storage;
+  auth: admin.auth.Auth;
   admin: typeof admin;
 }
 
@@ -66,8 +67,9 @@ export function initializeFirebaseAdmin(): FirebaseAdmin | null {
 
   const db = admin.firestore();
   const storage = admin.storage();
+  const auth = admin.auth();
   
-  const firebaseAdminSDK: FirebaseAdmin = { db, storage, admin };
+  const firebaseAdminSDK: FirebaseAdmin = { db, storage, auth, admin };
 
   global.__firebase_admin_sdk = firebaseAdminSDK;
 

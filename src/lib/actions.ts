@@ -5,10 +5,29 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/mysql'; // Switch to MySQL
 import type { ResultSetHeader } from 'mysql2';
-import { admin } from '@/lib/firebase-admin'; // Keep for signed URL generation
+import { admin } from '@/lib/firebase-admin'; // Keep for signed URL generation and auth
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
 import { randomUUID } from 'crypto';
+import { cookies } from 'next/headers';
+
+// --- AUTH HELPER ---
+async function verifyAuth() {
+  const sessionCookie = cookies().get('__session')?.value;
+  if (!sessionCookie) {
+    throw new Error('Unauthorized');
+  }
+  if (!admin) {
+    throw new Error('Firebase Admin not initialized');
+  }
+  try {
+    const decodedClaims = await admin.auth().verifySessionCookie(sessionCookie, true);
+    return decodedClaims;
+  } catch (error) {
+    throw new Error('Unauthorized');
+  }
+}
+
 
 // --- GET SIGNED UPLOAD URL ACTION (Remains the same, uses Firebase Storage) ---
 const getSignedUrlSchema = z.object({
@@ -17,6 +36,7 @@ const getSignedUrlSchema = z.object({
 });
 
 export async function getSignedUploadUrl(prevState: any, formData: FormData) {
+  await verifyAuth(); // Secure this action
   if (!admin) {
     return { success: false, message: 'Firebase Admin is not initialized. Cannot get signed URL.' };
   }
@@ -59,6 +79,7 @@ const CategorizeSchema = z.object({
 });
 
 export async function handleCategorize(prevState: any, formData: FormData) {
+  await verifyAuth(); // Secure this action
   const validatedFields = CategorizeSchema.safeParse({
     title: formData.get('title'),
     body: formData.get('body'),
@@ -102,6 +123,7 @@ const profileSchema = z.object({
 
 
 export async function updateProfile(prevState:any, formData: FormData) {
+  await verifyAuth(); // Secure this action
   if (!db) {
     return { success: false, message: 'Database tidak tersedia. Gagal memperbarui profil.' };
   }
@@ -159,6 +181,7 @@ const opinionUploadSchema = z.object({
 
 
 export async function handleOpinionUpload(prevState: any, formData: FormData) {
+    await verifyAuth(); // Secure this action
     if (!db) {
       return { success: false, message: 'Database tidak tersedia. Gagal mengunggah opini.', errors: null };
     }
@@ -204,6 +227,7 @@ const publicationUploadSchema = z.object({
 });
 
 export async function handlePublicationUpload(prevState: any, formData: FormData) {
+    await verifyAuth(); // Secure this action
     if (!db) {
       return { success: false, message: 'Database tidak tersedia. Gagal mengunggah publikasi.', errors: null };
     }
@@ -252,6 +276,7 @@ const ongoingUploadSchema = z.object({
 });
 
 export async function handleOngoingUpload(prevState: any, formData: FormData) {
+    await verifyAuth(); // Secure this action
     if (!db) {
       return { success: false, message: 'Database tidak tersedia. Gagal mengunggah riset.', errors: null };
     }
@@ -287,6 +312,7 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
 
 // --- DELETE CONTENT ACTION (Migrated to MySQL) ---
 export async function handleDeleteContent(contentId: number | string) {
+  await verifyAuth(); // Secure this action
   if (!db) {
     return { success: false, message: 'Database tidak tersedia. Gagal menghapus konten.' };
   }

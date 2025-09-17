@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -13,10 +14,13 @@ import { cn } from '@/lib/utils';
 import Logo from './logo';
 import { ThemeToggle } from './theme-toggle';
 import { navLinks } from './main-nav';
+import { useAuth } from './auth-provider';
+import Link from 'next/link';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { user, signOut, loading } = useAuth();
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 10);
@@ -38,6 +42,28 @@ export default function Header() {
     }
     setMobileNavOpen(false);
   };
+  
+  const AuthButton = () => {
+    if (loading) {
+      return <div className="h-9 w-24 rounded-md animate-pulse bg-muted"></div>
+    }
+    if(user) {
+      return (
+        <Button onClick={signOut} variant="outline">
+          <LogOut className="mr-2" />
+          Logout
+        </Button>
+      )
+    }
+    return (
+      <Button asChild>
+        <Link href="/login">
+          <LogIn className="mr-2" />
+          Admin Login
+        </Link>
+      </Button>
+    )
+  }
 
   return (
     <header
@@ -51,6 +77,7 @@ export default function Header() {
       <div className="container flex h-20 items-center justify-between">
         <Logo />
         <div className="flex items-center gap-2">
+          <AuthButton />
           <ThemeToggle />
           <div className="md:hidden">
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
