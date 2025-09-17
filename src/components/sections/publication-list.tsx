@@ -27,91 +27,106 @@ import {
   Tag as TagIcon,
   X,
   FileText,
-  User
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import AnimatedCard from '../animated-card';
 
 interface PublicationListProps {
   publications: PublicationPost[];
 }
 
-export default function PublicationList({ publications }: PublicationListProps) {
+export default function PublicationList({
+  publications,
+}: PublicationListProps) {
   const [selectedPub, setSelectedPub] = useState<PublicationPost | null>(null);
+
+  const handleCardClick = (pub: PublicationPost) => {
+    setSelectedPub(pub);
+  };
+  
+  const handleButtonClick = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation();
+    action();
+  }
 
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {publications.slice(0, 6).map((pub) => (
-          <Card
-            key={pub.id}
-            className="flex flex-col overflow-hidden transition-shadow duration-300 hover:shadow-xl group"
-          >
-            <div className="aspect-video overflow-hidden relative">
-              <Image
-                src={pub.image.imageUrl}
-                alt={pub.image.description}
-                width={600}
-                height={400}
-                data-ai-hint={pub.image.imageHint}
-                className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-              />
-              <div
-                className={cn(
-                  'absolute top-3 right-3 h-3 w-3 rounded-full border-2 border-background',
-                  pub.status === 'public' ? 'bg-green-500' : 'bg-red-500'
-                )}
-                title={
-                  pub.status === 'public'
-                    ? 'Publikasi Umum'
-                    : 'Izin Khusus Diperlukan'
-                }
-              ></div>
-            </div>
-            <CardHeader>
-              <CardTitle className="text-lg leading-tight h-14 line-clamp-2">
-                {pub.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <div className="flex flex-wrap gap-2">
-                {pub.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
+          <AnimatedCard key={pub.id}>
+            <Card
+              className="flex flex-col overflow-hidden transition-shadow duration-300 hover:shadow-xl group h-full cursor-pointer"
+              onClick={() => handleCardClick(pub)}
+            >
+              <div className="aspect-video overflow-hidden relative">
+                <Image
+                  src={pub.image.imageUrl}
+                  alt={pub.image.description}
+                  width={600}
+                  height={400}
+                  data-ai-hint={pub.image.imageHint}
+                  className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                />
+                <div
+                  className={cn(
+                    'absolute top-3 right-3 h-3 w-3 rounded-full border-2 border-background',
+                    pub.status === 'public' ? 'bg-green-500' : 'bg-red-500'
+                  )}
+                  title={
+                    pub.status === 'public'
+                      ? 'Publikasi Umum'
+                      : 'Izin Khusus Diperlukan'
+                  }
+                ></div>
               </div>
-            </CardContent>
-            <CardFooter className="justify-between">
-              <div className="text-sm text-muted-foreground flex items-center">
-                <Calendar className="w-4 h-4 mr-2" />
-                <span>{pub.publishedOn}</span>
-              </div>
-               <div className='flex items-center text-sm text-muted-foreground'>
-                    <User className="w-4 h-4 mr-2" />
-                    <span>{pub.author}</span>
+              <CardHeader>
+                <CardTitle className="text-lg leading-tight h-14 line-clamp-2">
+                  {pub.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <div className="flex flex-wrap gap-2">
+                  {pub.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
                 </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setSelectedPub(pub)}
-                >
-                  <Eye className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  asChild
-                  disabled={pub.status === 'private'}
-                >
-                  <Link href={pub.fileUrl}>
-                    <Download className="w-4 h-4" />
-                  </Link>
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
+              </CardContent>
+              <CardFooter className="justify-between">
+                <div className="text-sm text-muted-foreground flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span>{pub.publishedOn}</span>
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <User className="w-4 h-4 mr-2" />
+                  <span>{pub.author}</span>
+                </div>
+                <div className="flex items-center space-x-0">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => handleButtonClick(e, () => setSelectedPub(pub))}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    asChild
+                    disabled={pub.status === 'private'}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Link href={pub.fileUrl}>
+                      <Download className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          </AnimatedCard>
         ))}
       </div>
 
@@ -130,9 +145,9 @@ export default function PublicationList({ publications }: PublicationListProps) 
                   <Calendar className="w-4 h-4 mr-2" />
                   <span>{selectedPub?.publishedOn}</span>
                 </div>
-                 <div className="flex items-center">
-                    <User className="w-4 h-4 mr-2" />
-                    <span>{selectedPub?.author}</span>
+                <div className="flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  <span>{selectedPub?.author}</span>
                 </div>
                 <div className="flex items-center flex-wrap gap-2">
                   <TagIcon className="w-4 h-4 mr-2" />
@@ -172,8 +187,8 @@ export default function PublicationList({ publications }: PublicationListProps) 
             </div>
             {selectedPub?.status === 'private' && (
               <p className="text-sm text-center text-destructive/80">
-                This is a private publication and requires special permission to
-                download.
+                This is a private publication and requires special permission
+                to download.
               </p>
             )}
           </div>

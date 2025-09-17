@@ -5,13 +5,13 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ongoingResearches } from '@/lib/data';
 import { Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
+import AnimatedCard from '../animated-card';
 
 export default function OngoingSection() {
   return (
@@ -32,42 +32,41 @@ export default function OngoingSection() {
             const runningTime = `Berjalan ${formatDistanceToNow(research.startedOn, { locale: id })}`;
 
             return (
-              <Card
-                key={research.id}
-                className="flex flex-col overflow-hidden bg-card/50"
-              >
-                <div className="aspect-video overflow-hidden">
-                  <Image
-                    src={research.image.imageUrl}
-                    alt={research.image.description}
-                    width={600}
-                    height={400}
-                    data-ai-hint={research.image.imageHint}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <CardHeader>
-                  <CardTitle className="text-lg leading-tight h-14 line-clamp-2">
-                    {research.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-3">
-                  <p className="text-sm text-muted-foreground h-20 line-clamp-4">
-                    {research.description}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {research.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
-                      </Badge>
-                    ))}
+              <AnimatedCard key={research.id}>
+                <Card className="flex flex-col overflow-hidden bg-card/50 h-full">
+                  <div className="aspect-video overflow-hidden">
+                    <Image
+                      src={research.image.imageUrl}
+                      alt={research.image.description}
+                      width={600}
+                      height={400}
+                      data-ai-hint={research.image.imageHint}
+                      className="object-cover w-full h-full"
+                    />
                   </div>
-                </CardContent>
-                <CardFooter className="text-sm text-muted-foreground font-medium">
-                  <Clock className="w-4 h-4 mr-2 text-primary" />
-                  <span>{runningTime}</span>
-                </CardFooter>
-              </Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg leading-tight h-14 line-clamp-2">
+                      {research.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-grow space-y-3">
+                    <p className="text-sm text-muted-foreground h-20 line-clamp-4">
+                      {research.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {research.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                  <CardFooter className="text-sm text-muted-foreground font-medium">
+                    <Clock className="w-4 h-4 mr-2 text-primary" />
+                    <span>{runningTime}</span>
+                  </CardFooter>
+                </Card>
+              </AnimatedCard>
             );
           })}
         </div>
