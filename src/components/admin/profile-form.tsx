@@ -17,8 +17,9 @@ import { BookOpen, MessageSquare, PlusCircle, Trash2, Loader2, Camera, Upload } 
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { updateProfile } from '@/lib/actions';
-import { handleImageUpload } from '@/lib/storage';
+import { handleImageUpload, type UploadProgress } from '@/lib/storage';
 import type { Profile } from '@/lib/data';
+import { Progress } from '@/components/ui/progress';
 
 const toolSchema = z.object({
   name: z.string().min(1, 'Nama perkakas harus diisi'),
@@ -55,7 +56,7 @@ function SubmitButton() {
 
 export default function ProfileForm({ profileData }: ProfileFormProps) {
   const { toast } = useToast();
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [uploadingToolIndex, setUploadingToolIndex] = useState<number | null>(null);
   const [state, formAction] = useActionState(updateProfile, { success: false, message: '' });
 
@@ -108,9 +109,11 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
+    setUploadProgress({ percentage: 0, speed: '0 KB/s' });
     try {
-      const url = await handleImageUpload(file, 'profile-images');
+      const url = await handleImageUpload(file, 'profile-images', (progress) => {
+          setUploadProgress(progress);
+      });
       form.setValue('imageUrl', url);
       toast({
         title: 'Berhasil',
@@ -127,7 +130,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
             variant: 'destructive',
         });
     } finally {
-        setIsUploading(false);
+        setUploadProgress(null);
     }
   };
 
@@ -136,8 +139,11 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     if (!file) return;
 
     setUploadingToolIndex(index);
+    setUploadProgress({ percentage: 0, speed: '0 KB/s' });
     try {
-      const url = await handleImageUpload(file, 'tool-logos');
+      const url = await handleImageUpload(file, 'tool-logos', (progress) => {
+        setUploadProgress(progress);
+      });
       form.setValue(`tools.${index}.imageUrl`, url);
       toast({
         title: 'Berhasil',
@@ -155,6 +161,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
         });
     } finally {
         setUploadingToolIndex(null);
+        setUploadProgress(null);
     }
   };
 
@@ -179,7 +186,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 htmlFor="profile-image-upload" 
                 className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md"
               >
-                {isUploading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Camera className="h-8 w-8" />}
+                {uploadProgress && !uploadingToolIndex ? <Loader2 className="h-8 w-8 animate-spin" /> : <Camera className="h-8 w-8" />}
               </Label>
               <Input 
                 id="profile-image-upload" 
@@ -187,12 +194,19 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                 className="hidden" 
                 accept="image/png, image/jpeg, image/gif"
                 onChange={onProfileImageChange}
-                disabled={isUploading}
+                disabled={!!uploadProgress}
               />
             </div>
-             <p className="text-sm text-center text-muted-foreground">
-              Klik pada gambar untuk mengganti foto profil Anda.
-            </p>
+             {uploadProgress && !uploadingToolIndex ? (
+              <div className="w-full text-center space-y-1">
+                <Progress value={uploadProgress.percentage} className="h-2" />
+                <p className="text-xs text-muted-foreground">{Math.round(uploadProgress.percentage)}% | {uploadProgress.speed}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-center text-muted-foreground">
+                Klik pada gambar untuk mengganti foto profil Anda.
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -284,7 +298,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                         className="hidden"
                         accept="image/png, image/jpeg, image/gif, image/svg+xml"
                         onChange={(e) => onToolLogoChange(e, index)}
-                        disabled={uploadingToolIndex === index}
+                        disabled={uploadingToolIndex !== null}
                       />
                     </div>
                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -292,6 +306,12 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
                     </Button>
                   </div>
                 ))}
+                {uploadProgress && uploadingToolIndex !== null && (
+                    <div className="w-full text-center space-y-1">
+                        <Progress value={uploadProgress.percentage} className="h-2" />
+                        <p className="text-xs text-muted-foreground">{Math.round(uploadProgress.percentage)}% | {uploadProgress.speed}</p>
+                    </div>
+                )}
                 <Button type="button" variant="outline" onClick={() => append({ name: '', imageUrl: '' })}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Tambah Perkakas

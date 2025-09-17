@@ -12,7 +12,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Loader2, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
-import { handleImageUpload } from '@/lib/storage';
+import { handleImageUpload, type UploadProgress } from '@/lib/storage';
+import { Progress } from '@/components/ui/progress';
 
 const tags = [
   'Repost',
@@ -46,7 +47,7 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
 
   useEffect(() => {
     if (state?.message) {
@@ -66,9 +67,11 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
+    setUploadProgress({ percentage: 0, speed: '0 KB/s' });
     try {
-      const url = await handleImageUpload(file, 'ongoing-images');
+      const url = await handleImageUpload(file, 'ongoing-images', (progress) => {
+        setUploadProgress(progress);
+      });
       setImageUrl(url);
       toast({
         title: 'Berhasil',
@@ -82,7 +85,7 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
         variant: 'destructive',
       });
     } finally {
-      setIsUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -120,7 +123,7 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
         <Label htmlFor="image-upload-ongoing">Gambar</Label>
         <div className="flex items-center gap-4">
           <div className="w-32 h-20 bg-muted rounded-md flex items-center justify-center">
-            {isUploading ? <Loader2 className="animate-spin" /> : imageUrl ? (
+            {uploadProgress ? <Loader2 className="animate-spin" /> : imageUrl ? (
               <Image src={imageUrl} alt="Preview" width={128} height={80} className="object-cover rounded-md w-full h-full" />
             ) : (
               <ImageIcon className="text-muted-foreground" />
@@ -133,7 +136,13 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
             </Label>
           </Button>
         </div>
-        <Input id="image-upload-ongoing" type="file" className="hidden" accept="image/*" onChange={onImageChange} disabled={isUploading} />
+        <Input id="image-upload-ongoing" type="file" className="hidden" accept="image/*" onChange={onImageChange} disabled={!!uploadProgress} />
+        {uploadProgress && (
+          <div className="space-y-1">
+            <Progress value={uploadProgress.percentage} className="h-2" />
+            <p className="text-xs text-muted-foreground">{Math.round(uploadProgress.percentage)}% | {uploadProgress.speed}</p>
+          </div>
+        )}
         {state?.errors?.imageUrl && <p className="text-sm text-destructive">{state.errors.imageUrl[0]}</p>}
       </div>
       <SubmitButton />
