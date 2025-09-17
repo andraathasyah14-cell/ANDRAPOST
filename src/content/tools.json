@@ -1,0 +1,19 @@
+
+[
+  {
+    "name": "MySQL",
+    "icon": "MySQL"
+  },
+  {
+    "name": "Stata",
+    "icon": "Stata"
+  },
+  {
+    "name": "Anaconda Python",
+    "icon": "Anaconda"
+  },
+  {
+    "name": "Jupyter Notebook",
+    "icon": "Jupyter"
+  }
+]

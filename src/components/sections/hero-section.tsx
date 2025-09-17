@@ -1,22 +1,10 @@
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { publications, opinions } from '@/lib/data';
-import {
-  MySQLIcon,
-  StataIcon,
-  AnacondaPythonIcon,
-  JupyterIcon,
-} from '@/components/icons/tool-logos';
-import { BookOpen, MessageSquare } from 'lucide-react';
+import { publications, opinions, tools } from '@/lib/data';
 
-const tools = [
-  { name: 'MySQL', icon: MySQLIcon },
-  { name: 'Stata', icon: StataIcon },
-  { name: 'Anaconda Python', icon: AnacondaPythonIcon },
-  { name: 'Jupyter Notebook', icon: JupyterIcon },
-];
+import { BookOpen, MessageSquare } from 'lucide-react';
+import { ToolLogos } from '../icons/tool-logos';
 
 export default function HeroSection() {
   const profileImage = PlaceHolderImages.find((p) => p.id === 'profile');
@@ -78,18 +66,21 @@ export default function HeroSection() {
           <Card className="shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 md:gap-x-12">
-                {tools.map((tool) => (
-                  <div
-                    key={tool.name}
-                    className="flex items-center space-x-3 text-muted-foreground"
-                    title={tool.name}
-                  >
-                    <tool.icon className="h-6 w-6" />
-                    <span className="hidden sm:inline text-sm font-medium">
-                      {tool.name}
-                    </span>
-                  </div>
-                ))}
+                {tools.map((tool) => {
+                  const Icon = ToolLogos[tool.icon as keyof typeof ToolLogos];
+                  return (
+                    <div
+                      key={tool.name}
+                      className="flex items-center space-x-3 text-muted-foreground"
+                      title={tool.name}
+                    >
+                      {Icon && <Icon className="h-6 w-6" />}
+                      <span className="hidden sm:inline text-sm font-medium">
+                        {tool.name}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
