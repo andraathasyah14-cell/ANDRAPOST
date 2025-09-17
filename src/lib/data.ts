@@ -73,7 +73,7 @@ export type ContentPost = OpinionContent | PublicationContent | OngoingContent;
 // --- MOCK DATA ---
 const defaultProfile: Profile = {
   name: "Diandra Athasyah Subagja",
-  description: "Peneliti dan analis independen teknologi, government, corporate, masyarakat dari domestik hingga internasional",
+  description: "Independent researcher and analyst on technology, government, corporate, and community topics, from domestic to international.",
   tools: [
     { name: "Stata", imageUrl: "/tool-logos/stata.svg" },
     { name: "MySQL", imageUrl: "/tool-logos/mysql.svg" },
