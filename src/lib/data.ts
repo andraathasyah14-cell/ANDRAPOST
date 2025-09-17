@@ -87,47 +87,45 @@ const defaultProfile: Profile = {
 // --- Main Data Fetching Functions ---
 
 export async function getProfile(): Promise<Profile> {
-  // try {
-  //   const doc = await db.collection('app-data').doc('profile').get();
-  //   if (!doc.exists) {
-  //     // If profile doesn't exist in Firestore, create it from default
-  //     console.log('Profile document not found, creating from default.');
-  //     await db.collection('app-data').doc('profile').set(defaultProfile);
-  //     return defaultProfile;
-  //   }
-  //   return doc.data() as Profile;
-  // } catch (error) {
-  //   console.error('Error fetching profile, returning default:', error);
-  //   // Return default profile as a fallback if Firestore is unreachable
-  //   return defaultProfile;
-  // }
-  return defaultProfile;
+  try {
+    const doc = await db.collection('app-data').doc('profile').get();
+    if (!doc.exists) {
+      // If profile doesn't exist in Firestore, create it from default
+      console.log('Profile document not found, creating from default.');
+      await db.collection('app-data').doc('profile').set(defaultProfile);
+      return defaultProfile;
+    }
+    return doc.data() as Profile;
+  } catch (error) {
+    console.error('Error fetching profile, returning default:', error);
+    // Return default profile as a fallback if Firestore is unreachable
+    return defaultProfile;
+  }
 }
 
 export async function getAllContent(): Promise<ContentPost[]> {
-  // try {
-  //   const snapshot = await db.collection('content').get();
-  //   if (snapshot.empty) {
-  //     return [];
-  //   }
-  //   const content = snapshot.docs.map(doc => {
-  //     const data = doc.data();
-  //     // Firestore `Timestamp` objects need to be converted to JS `Date` objects
-  //     if (data.contentType === 'ongoing' && data.startedOn?.toDate) {
-  //       return {
-  //         id: doc.id,
-  //         ...data,
-  //         startedOn: data.startedOn.toDate(),
-  //       } as OngoingContent;
-  //     }
-  //     return { id: doc.id, ...data } as ContentPost;
-  //   });
-  //   return content;
-  // } catch (error) {
-  //     console.error("Error fetching all content, returning empty array:", error);
-  //     return [];
-  // }
-  return [];
+  try {
+    const snapshot = await db.collection('content').get();
+    if (snapshot.empty) {
+      return [];
+    }
+    const content = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // Firestore `Timestamp` objects need to be converted to JS `Date` objects
+      if (data.contentType === 'ongoing' && data.startedOn?.toDate) {
+        return {
+          id: doc.id,
+          ...data,
+          startedOn: data.startedOn.toDate(),
+        } as OngoingContent;
+      }
+      return { id: doc.id, ...data } as ContentPost;
+    });
+    return content;
+  } catch (error) {
+      console.error("Error fetching all content, returning empty array:", error);
+      return [];
+  }
 }
 
 
