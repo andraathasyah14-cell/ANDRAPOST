@@ -2,10 +2,24 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
-import { getProfile } from '@/lib/data';
+import { getProfile, type Profile } from '@/lib/data';
+
+const defaultProfile: Profile = {
+  name: "Diandra Athasyah Subagja",
+  description: "Independent researcher and analyst on technology, government, corporate, and community topics, from domestic to international.",
+  tools: [],
+  imageUrl: "https://picsum.photos/seed/profile/400/400",
+};
 
 export async function generateMetadata(): Promise<Metadata> {
-  const profile = await getProfile();
+  let profile: Profile;
+  try {
+    profile = await getProfile();
+  } catch (error) {
+    console.error("Failed to fetch profile for metadata, using default. Error:", error);
+    profile = defaultProfile;
+  }
+  
   const siteName = "ANDRAPOST";
   const title = `${profile.name} | ${siteName}`;
   const description = profile.description;
