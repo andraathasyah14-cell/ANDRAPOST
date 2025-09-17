@@ -126,6 +126,28 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
     return { success: true, message: 'Fungsi unggah riset dinonaktifkan sementara.', errors: null };
 }
 
+// --- DELETE CONTENT ACTION ---
+export async function handleDeleteContent(contentId: string) {
+  try {
+    // This is a placeholder. In a real app, you'd delete from the database.
+    console.log(`(DEMO) Deleting content with ID: ${contentId}. Database is disabled.`);
+    
+    // In a real scenario with Firestore:
+    // await db.collection('content').doc(contentId).delete();
+
+    revalidatePath('/admin01'); // Revalidate the admin page to show updated list
+    revalidatePath('/'); // Revalidate home page
+    revalidatePath('/opini');
+    revalidatePath('/publikasi');
+    revalidatePath('/ongoing');
+
+    return { success: true, message: 'Konten berhasil dihapus (secara demo).' };
+  } catch (error) {
+    console.error('Error deleting content:', error);
+    return { success: false, message: 'Gagal menghapus konten.' };
+  }
+}
+
 
 // --- FEEDBACK SUBMIT ACTION ---
 

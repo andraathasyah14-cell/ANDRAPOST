@@ -16,6 +16,7 @@ import OpinionForm from '@/components/admin/opinion-form';
 import PublicationForm from '@/components/admin/publication-form';
 import OngoingForm from '@/components/admin/ongoing-form';
 import { handleOpinionUpload, handlePublicationUpload, handleOngoingUpload } from '@/lib/actions';
+import ContentList from '@/components/admin/content-list';
 
 export default async function AdminPage() {
   const [profile, allContent] = await Promise.all([
@@ -30,6 +31,10 @@ export default async function AdminPage() {
     totalOpinions: allContent.filter(c => c.contentType === 'opinion').length,
     tools: profile.tools,
   };
+  
+  const opinions = allContent.filter(c => c.contentType === 'opinion');
+  const publications = allContent.filter(c => c.contentType === 'publication');
+  const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing');
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center p-4">
@@ -55,7 +60,8 @@ export default async function AdminPage() {
           <div className="flex justify-center mb-4">
             <TabsList>
               <TabsTrigger value="profile">Profile Management</TabsTrigger>
-              <TabsTrigger value="content">Content Management</TabsTrigger>
+              <TabsTrigger value="upload">Content Upload</TabsTrigger>
+              <TabsTrigger value="edit">Edit & Delete Content</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="profile">
@@ -82,7 +88,7 @@ export default async function AdminPage() {
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="content">
+          <TabsContent value="upload">
             <Card>
               <CardHeader>
                 <CardTitle>Content Management</CardTitle>
@@ -121,6 +127,23 @@ export default async function AdminPage() {
                     </div>
                   </TabsContent>
                 </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+           <TabsContent value="edit">
+            <Card>
+              <CardHeader>
+                <CardTitle>Edit & Delete Content</CardTitle>
+                <CardDescription>
+                  Review, edit, or delete your existing content here.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ContentList 
+                  opinions={opinions}
+                  publications={publications}
+                  ongoingResearches={ongoingResearches}
+                />
               </CardContent>
             </Card>
           </TabsContent>
