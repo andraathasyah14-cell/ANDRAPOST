@@ -3,12 +3,14 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { db, admin } from '@/lib/firebase-admin';
+import { db } from '@/lib/mysql'; // Switch to MySQL
+import type { ResultSetHeader } from 'mysql2';
+import { admin } from '@/lib/firebase-admin'; // Keep for signed URL generation
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
 import { randomUUID } from 'crypto';
 
-// --- GET SIGNED UPLOAD URL ACTION ---
+// --- GET SIGNED UPLOAD URL ACTION (Remains the same, uses Firebase Storage) ---
 const getSignedUrlSchema = z.object({
   fileName: z.string().min(1),
   fileType: z.string().min(1),
@@ -33,18 +35,14 @@ export async function getSignedUploadUrl(prevState: any, formData: FormData) {
   try {
     const bucket = admin.storage().bucket();
     const file = bucket.file(filePath);
-
     const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
-
     const [signedUrl] = await file.getSignedUrl({
       version: 'v4',
       action: 'write',
       expires,
       contentType: fileType,
     });
-    
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
-
     return { success: true, signedUrl, publicUrl };
   } catch (error) {
     console.error('Error getting signed URL:', error);
@@ -53,7 +51,7 @@ export async function getSignedUploadUrl(prevState: any, formData: FormData) {
 }
 
 
-// --- CATEGORIZE ACTION ---
+// --- CATEGORIZE ACTION (Remains the same, it's an AI flow) ---
 
 const CategorizeSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -88,7 +86,7 @@ export async function handleCategorize(prevState: any, formData: FormData) {
   }
 }
 
-// --- PROFILE UPDATE ACTION ---
+// --- PROFILE UPDATE ACTION (Migrated to MySQL) ---
 
 const toolSchema = z.object({
   name: z.string().min(1, 'Nama perkakas harus diisi'),
@@ -115,27 +113,41 @@ export async function updateProfile(prevState:any, formData: FormData) {
   });
   
   if (!validatedFields.success) {
-    console.log(validatedFields.error.flatten().fieldErrors);
     return { success: false, message: 'Validasi data gagal. Periksa kembali semua isian.' };
   }
 
+  const connection = await db.getConnection();
   try {
-    const { imageUrl, ...rest } = validatedFields.data;
-    const profileUpdateData: any = { ...rest };
-    if (imageUrl) {
-        profileUpdateData.imageUrl = imageUrl;
+    await connection.beginTransaction();
+
+    const { name, description, imageUrl, tools } = validatedFields.data;
+    
+    // Update profile table
+    await connection.query(
+      'UPDATE profile SET name = ?, description = ?, image_url = ? WHERE id = 1',
+      [name, description, imageUrl || null]
+    );
+
+    // Replace tools
+    await connection.query('DELETE FROM tools');
+    for (const tool of tools) {
+        await connection.query('INSERT INTO tools (name, image_url) VALUES (?, ?)', [tool.name, tool.imageUrl]);
     }
-    await db.collection('app-data').doc('profile').update(profileUpdateData);
+
+    await connection.commit();
     revalidatePath('/');
     revalidatePath('/admin01');
     return { success: true, message: 'Profil berhasil diperbarui!' };
   } catch (error) {
-    console.error('Error updating profile:', error);
+    await connection.rollback();
+    console.error('Error updating profile in MySQL:', error);
     return { success: false, message: 'Gagal memperbarui profil di database.' };
+  } finally {
+      connection.release();
   }
 }
 
-// --- OPINION UPLOAD ACTION ---
+// --- OPINION UPLOAD ACTION (Migrated to MySQL) ---
 
 const opinionUploadSchema = z.object({
     postedOn: z.string().min(1, "Waktu harus diisi"),
@@ -163,24 +175,23 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
     }
 
     try {
-        const { imageUrl, ...rest } = validatedFields.data;
-        const newOpinion = {
-            contentType: 'opinion',
-            ...rest,
-            image: { imageUrl },
-        };
-        await db.collection('content').add(newOpinion);
+        const { title, tags, content, imageUrl, postedOn } = validatedFields.data;
+        const sql = `INSERT INTO content (content_type, title, tags, content, image_url, posted_on) VALUES (?, ?, ?, ?, ?, ?)`;
+        const values = ['opinion', title, JSON.stringify(tags), content, imageUrl, postedOn];
+        
+        await db.query(sql, values);
+
         revalidatePath('/');
         revalidatePath('/opini');
         revalidatePath('/admin01');
         return { success: true, message: 'Opini berhasil diunggah!', errors: null };
     } catch (error) {
-        console.error('Error uploading opinion:', error);
+        console.error('Error uploading opinion to MySQL:', error);
         return { success: false, message: 'Gagal mengunggah opini.', errors: null };
     }
 }
 
-// --- PUBLICATION UPLOAD ACTION ---
+// --- PUBLICATION UPLOAD ACTION (Migrated to MySQL) ---
 
 const publicationUploadSchema = z.object({
     publishedOn: z.string().min(1, "Waktu harus diisi"),
@@ -211,26 +222,26 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
     }
     
     try {
-        const { imageUrl, ...rest } = validatedFields.data;
-        const newPublication = {
-            contentType: 'publication',
-            ...rest,
-            image: { imageUrl },
-            // In a real app, you might want to generate a viewUrl differently
-            viewUrl: rest.fileUrl 
-        };
-        await db.collection('content').add(newPublication);
+        const { title, tags, description, fileUrl, status, imageUrl, publishedOn } = validatedFields.data;
+        // In a real app, you might want to generate a viewUrl differently
+        const viewUrl = fileUrl; 
+        
+        const sql = `INSERT INTO content (content_type, title, tags, description, file_url, view_url, status, image_url, published_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const values = ['publication', title, JSON.stringify(tags), description, fileUrl, viewUrl, status, imageUrl, publishedOn];
+
+        await db.query(sql, values);
+
         revalidatePath('/');
         revalidatePath('/publikasi');
         revalidatePath('/admin01');
         return { success: true, message: 'Publikasi berhasil diunggah!', errors: null };
     } catch (error) {
-        console.error('Error uploading publication:', error);
+        console.error('Error uploading publication to MySQL:', error);
         return { success: false, message: 'Gagal mengunggah publikasi.', errors: null };
     }
 }
 
-// --- ONGOING RESEARCH UPLOAD ACTION ---
+// --- ONGOING RESEARCH UPLOAD ACTION (Migrated to MySQL) ---
 
 const ongoingUploadSchema = z.object({
     startedOn: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Format tanggal tidak valid." }),
@@ -257,34 +268,34 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
     }
 
     try {
-        const { imageUrl, startedOn, ...rest } = validatedFields.data;
-        const newOngoing = {
-            contentType: 'ongoing',
-            ...rest,
-            startedOn: new Date(startedOn),
-            image: { imageUrl },
-        };
-        await db.collection('content').add(newOngoing);
+        const { title, tags, description, imageUrl, startedOn } = validatedFields.data;
+
+        const sql = `INSERT INTO content (content_type, title, tags, description, image_url, started_on) VALUES (?, ?, ?, ?, ?, ?)`;
+        const values = ['ongoing', title, JSON.stringify(tags), description, imageUrl, new Date(startedOn)];
+
+        await db.query(sql, values);
+
         revalidatePath('/');
         revalidatePath('/ongoing');
         revalidatePath('/admin01');
         return { success: true, message: 'Riset berhasil diunggah!', errors: null };
     } catch (error) {
-        console.error('Error uploading ongoing research:', error);
+        console.error('Error uploading ongoing research to MySQL:', error);
         return { success: false, message: 'Gagal mengunggah riset.', errors: null };
     }
 }
 
-// --- DELETE CONTENT ACTION ---
-export async function handleDeleteContent(contentId: string) {
+// --- DELETE CONTENT ACTION (Migrated to MySQL) ---
+export async function handleDeleteContent(contentId: number | string) {
   if (!db) {
     return { success: false, message: 'Database tidak tersedia. Gagal menghapus konten.' };
   }
-  if (!contentId) {
+  const id = Number(contentId);
+  if (isNaN(id) || id <= 0) {
     return { success: false, message: 'ID Konten tidak valid.' };
   }
   try {
-    await db.collection('content').doc(contentId).delete();
+    await db.query('DELETE FROM content WHERE id = ?', [id]);
 
     revalidatePath('/admin01');
     revalidatePath('/');
@@ -294,13 +305,15 @@ export async function handleDeleteContent(contentId: string) {
 
     return { success: true, message: 'Konten berhasil dihapus.' };
   } catch (error) {
-    console.error('Error deleting content:', error);
+    console.error('Error deleting content from MySQL:', error);
     return { success: false, message: 'Gagal menghapus konten dari database.' };
   }
 }
 
 
-// --- FEEDBACK SUBMIT ACTION ---
+// --- FEEDBACK SUBMIT ACTION (Flow remains the same, but flow now writes to Firestore) ---
+// Note: The `saveFeedback` flow still writes to Firestore.
+// It can be migrated separately if needed.
 
 const feedbackSchema = z.object({
   name: z.string().min(1, 'Nama harus diisi.'),
@@ -323,6 +336,8 @@ export async function handleFeedbackSubmit(prevState: any, formData: FormData) {
   }
 
   try {
+    // The underlying AI flow still points to Firestore.
+    // This is a separate concern from the main content data migration.
     const {success} = await saveFeedback(validatedFields.data);
     if (!success) {
         return {

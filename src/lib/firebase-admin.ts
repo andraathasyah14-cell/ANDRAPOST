@@ -1,3 +1,4 @@
+
 // src/lib/firebase-admin.ts
 import admin from 'firebase-admin';
 
@@ -18,7 +19,7 @@ declare global {
   var __firebase_admin_sdk: FirebaseAdmin | undefined | null;
 }
 
-function initializeFirebaseAdmin(): FirebaseAdmin | null {
+export function initializeFirebaseAdmin(): FirebaseAdmin | null {
   // If we've already tried and failed, don't try again.
   if (global.__firebase_admin_sdk === null) {
     return null;
@@ -33,12 +34,20 @@ function initializeFirebaseAdmin(): FirebaseAdmin | null {
   try {
     const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (!serviceAccountString) {
-      console.log('FIREBASE_SERVICE_ACCOUNT_KEY is not set. Firebase Admin initialization skipped.');
+      console.warn('FIREBASE_SERVICE_ACCOUNT_KEY is not set. Firebase Admin initialization skipped.');
       global.__firebase_admin_sdk = null;
       return null;
     }
     
-    const serviceAccount = JSON.parse(serviceAccountString);
+    let serviceAccount;
+    try {
+        serviceAccount = JSON.parse(serviceAccountString);
+    } catch(e) {
+        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Make sure it is a valid JSON string.');
+        global.__firebase_admin_sdk = null;
+        return null;
+    }
+
 
     if (!admin.apps.length) {
       admin.initializeApp({
@@ -67,5 +76,5 @@ function initializeFirebaseAdmin(): FirebaseAdmin | null {
 
 const sdk = initializeFirebaseAdmin();
 
-export const db = sdk?.db ?? null;
+// Export the initialized instance directly for use in other server-side modules
 export const admin = sdk?.admin ?? null;

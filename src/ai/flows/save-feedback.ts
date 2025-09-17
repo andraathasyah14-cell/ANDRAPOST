@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to save user feedback to Firestore.
@@ -8,7 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { db } from '@/lib/firebase-admin';
+import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
 
 const SaveFeedbackInputSchema = z.object({
   name: z.string().describe('The name of the person giving feedback.'),
@@ -29,14 +30,13 @@ const saveFeedbackFlow = ai.defineFlow(
     outputSchema: z.object({success: z.boolean()}),
   },
   async input => {
-    if (!db) {
+    const firebase = initializeFirebaseAdmin();
+    if (!firebase || !firebase.db) {
       console.error("Database not initialized, can't save feedback.");
-      // Gracefully fail without throwing, but return an unsuccessful status.
-      // The client-side action handler can then show a user-friendly error.
       return {success: false};
     }
     // Data dari formulir feedback disimpan di koleksi 'feedback' di Cloud Firestore.
-    await db.collection('feedback').add({
+    await firebase.db.collection('feedback').add({
       ...input,
       createdAt: new Date().toISOString(),
     });

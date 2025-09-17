@@ -1,7 +1,8 @@
 
 'use server';
 import 'server-only';
-import { db } from '@/lib/firebase-admin';
+import { db } from '@/lib/mysql';
+import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 // --- Data Type Definitions ---
 
@@ -23,6 +24,7 @@ export interface ImageDetails {
 }
 
 export interface Tool {
+  id?: number;
   name: string;
   imageUrl: string;
 }
@@ -38,7 +40,7 @@ export type ContentType = 'opinion' | 'publication' | 'ongoing';
 
 // Base interface for all content
 export interface ContentBase {
-  id: string;
+  id: number;
   contentType: ContentType;
   title: string;
   tags: Tag[];
@@ -71,7 +73,7 @@ export interface OngoingContent extends ContentBase {
 
 export type ContentPost = OpinionContent | PublicationContent | OngoingContent;
 
-// --- MOCK DATA ---
+// --- DEFAULT DATA for fallback ---
 const defaultProfile: Profile = {
   name: "Diandra Athasyah Subagja",
   description: "Independent researcher and analyst on technology, government, corporate, and community topics, from domestic to international.",
@@ -90,50 +92,96 @@ const defaultProfile: Profile = {
 
 export async function getProfile(): Promise<Profile> {
   if (!db) {
-    console.log('Firestore is not available, returning default profile.');
+    console.warn('MySQL is not available, returning default profile.');
     return defaultProfile;
   }
   try {
-    const doc = await db.collection('app-data').doc('profile').get();
-    if (!doc.exists) {
-      // If profile doesn't exist in Firestore, create it with default data.
-      console.log('Profile document not found, creating from default.');
-      await db.collection('app-data').doc('profile').set(defaultProfile);
+    const [profileRows] = await db.query<RowDataPacket[]>(
+        `SELECT name, description, image_url as imageUrl FROM profile WHERE id = 1`
+    );
+    
+    if (profileRows.length === 0) {
+      console.warn("Profile not found in database, returning default.");
       return defaultProfile;
     }
-    return doc.data() as Profile;
+
+    const [toolRows] = await db.query<RowDataPacket[]>(
+        `SELECT name, image_url as imageUrl FROM tools`
+    );
+
+    return {
+        name: profileRows[0].name,
+        description: profileRows[0].description,
+        imageUrl: profileRows[0].imageUrl,
+        tools: toolRows as Tool[],
+    };
   } catch (error) {
-    console.error('Error fetching profile, returning default profile:', error);
-    // Return default profile as a fallback if Firestore is unreachable
+    console.error('Error fetching profile from MySQL, returning default profile:', error);
     return defaultProfile;
   }
 }
 
 export async function getAllContent(): Promise<ContentPost[]> {
   if (!db) {
-    console.log('Firestore is not available, returning empty content array.');
+    console.warn('MySQL is not available, returning empty content array.');
     return [];
   }
   try {
-    const snapshot = await db.collection('content').get();
-    if (snapshot.empty) {
-      return [];
-    }
-    const content = snapshot.docs.map(doc => {
-      const data = doc.data();
-      // Firestore `Timestamp` objects need to be converted to JS `Date` objects
-      if (data.contentType === 'ongoing' && data.startedOn?.toDate) {
-        return {
-          id: doc.id,
-          ...data,
-          startedOn: data.startedOn.toDate(),
-        } as OngoingContent;
-      }
-      return { id: doc.id, ...data } as ContentPost;
-    });
-    return content;
+    const [rows] = await db.query<RowDataPacket[]>(`
+      SELECT 
+        id, 
+        content_type as contentType, 
+        title, 
+        tags, 
+        image_url as imageUrl,
+        posted_on as postedOn,
+        content,
+        published_on as publishedOn,
+        status,
+        file_url as fileUrl,
+        view_url as viewUrl,
+        description,
+        started_on as startedOn
+      FROM content
+    `);
+
+    return rows.map(row => {
+        const base = {
+            id: row.id,
+            contentType: row.contentType,
+            title: row.title,
+            tags: JSON.parse(row.tags), // Assuming tags are stored as a JSON string array
+            image: { imageUrl: row.imageUrl },
+        };
+        if (row.contentType === 'opinion') {
+            return {
+                ...base,
+                postedOn: row.postedOn,
+                content: row.content
+            } as OpinionContent;
+        }
+        if (row.contentType === 'publication') {
+            return {
+                ...base,
+                publishedOn: row.publishedOn,
+                status: row.status,
+                fileUrl: row.fileUrl,
+                viewUrl: row.viewUrl,
+                description: row.description
+            } as PublicationContent;
+        }
+        if (row.contentType === 'ongoing') {
+            return {
+                ...base,
+                startedOn: new Date(row.startedOn),
+                description: row.description
+            } as OngoingContent;
+        }
+        return null;
+    }).filter(Boolean) as ContentPost[];
+
   } catch (error) {
-      console.error("Error fetching all content, returning empty array:", error);
+      console.error("Error fetching all content from MySQL, returning empty array:", error);
       return [];
   }
 }
@@ -148,9 +196,9 @@ export async function getHomePageData() {
       getAllContent()
     ]);
 
-    const opinions = allContent.filter(c => c.contentType === 'opinion').sort((a,b) => new Date(b.postedOn).getTime() - new Date(a.postedOn).getTime()) as OpinionContent[];
+    const opinions = allContent.filter(c => c.contentType === 'opinion').sort((a,b) => new Date((b as OpinionContent).postedOn).getTime() - new Date((a as OpinionContent).postedOn).getTime()) as OpinionContent[];
     const publications = allContent.filter(c => c.contentType === 'publication') as PublicationContent[];
-    const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing').sort((a,b) => b.startedOn.getTime() - a.startedOn.getTime()) as OngoingContent[];
+    const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing').sort((a,b) => (b as OngoingContent).startedOn.getTime() - (a as OngoingContent).startedOn.getTime()) as OngoingContent[];
 
     return {
       profile,
