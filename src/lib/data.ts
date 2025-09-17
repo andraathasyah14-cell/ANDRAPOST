@@ -1,7 +1,18 @@
 
 'use server';
 import 'server-only';
-import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+
+// --- FIREBASE ADMIN INITIALIZATION (SERVER-SIDE) ---
+// This ensures Firebase Admin is initialized only once.
+if (!getApps().length) {
+  initializeApp({
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  });
+   console.log("Firebase Admin SDK initialized in data.ts.");
+}
+const db = getFirestore();
 
 // --- Data Type Definitions ---
 
@@ -23,7 +34,7 @@ export interface ImageDetails {
 }
 
 export interface Tool {
-  id?: string; // Firestore uses string IDs
+  id?: string;
   name: string;
   imageUrl: string;
 }
@@ -39,7 +50,7 @@ export type ContentType = 'opinion' | 'publication' | 'ongoing';
 
 // Base interface for all content
 export interface ContentBase {
-  id: string; // Firestore uses string IDs
+  id: string;
   contentType: ContentType;
   title: string;
   tags: Tag[];
@@ -90,18 +101,13 @@ const defaultProfile: Profile = {
 // --- Main Data Fetching Functions ---
 
 export async function getProfile(): Promise<Profile> {
-  const firebase = initializeFirebaseAdmin();
-  if (!firebase || !firebase.db) {
-    console.warn('Firestore is not available, returning default profile.');
-    return defaultProfile;
-  }
   try {
-    const profileDoc = await firebase.db.collection('profile').doc('main').get();
+    const profileDoc = await db.collection('profile').doc('main').get();
     
     if (!profileDoc.exists) {
       console.warn("Profile document not found in Firestore, returning default.");
       // Optional: Create the default profile if it doesn't exist
-      await firebase.db.collection('profile').doc('main').set(defaultProfile);
+      await db.collection('profile').doc('main').set(defaultProfile);
       return defaultProfile;
     }
 
@@ -114,13 +120,9 @@ export async function getProfile(): Promise<Profile> {
 }
 
 export async function getAllContent(): Promise<ContentPost[]> {
-  const firebase = initializeFirebaseAdmin();
-  if (!firebase || !firebase.db) {
-    console.warn('Firestore is not available, returning empty content array.');
-    return [];
-  }
   try {
-    const contentSnapshot = await firebase.db.collection('content').get();
+    // Order by creation date descending to get newest content first
+    const contentSnapshot = await db.collection('content').orderBy('createdAt', 'desc').get();
 
     if (contentSnapshot.empty) {
       return [];
@@ -128,41 +130,45 @@ export async function getAllContent(): Promise<ContentPost[]> {
 
     return contentSnapshot.docs.map(doc => {
       const data = doc.data();
+      // Ensure there is an ID and a valid content type
+      if (!doc.id || !data.contentType) return null;
+
       const base = {
         id: doc.id,
         contentType: data.contentType,
-        title: data.title,
+        title: data.title || 'Untitled',
         tags: data.tags || [],
-        image: { imageUrl: data.imageUrl },
+        image: { imageUrl: data.imageUrl || "https://picsum.photos/seed/default/600/400" },
       };
 
       if (data.contentType === 'opinion') {
         return {
           ...base,
-          postedOn: data.postedOn,
-          content: data.content
+          postedOn: data.postedOn || 'N/A',
+          content: data.content || ''
         } as OpinionContent;
       }
       if (data.contentType === 'publication') {
         return {
           ...base,
-          publishedOn: data.publishedOn,
-          status: data.status,
-          fileUrl: data.fileUrl,
-          viewUrl: data.viewUrl,
-          description: data.description
+          publishedOn: data.publishedOn || 'N/A',
+          status: data.status || 'private',
+          fileUrl: data.fileUrl || '#',
+          viewUrl: data.viewUrl || '#',
+          description: data.description || ''
         } as PublicationContent;
       }
       if (data.contentType === 'ongoing') {
+        // Firestore Timestamps need to be converted to JS Dates
+        const startedOnDate = data.startedOn?.toDate ? data.startedOn.toDate() : new Date();
         return {
           ...base,
-          // Firestore Timestamps need to be converted to JS Dates
-          startedOn: (data.startedOn.toDate ? data.startedOn.toDate() : new Date(data.startedOn)),
-          description: data.description
+          startedOn: startedOnDate,
+          description: data.description || ''
         } as OngoingContent;
       }
       return null;
-    }).filter(Boolean) as ContentPost[];
+    }).filter((item): item is ContentPost => item !== null); // Type guard to filter out nulls
 
   } catch (error) {
       console.error("Error fetching all content from Firestore, returning empty array:", error);
@@ -180,9 +186,11 @@ export async function getHomePageData() {
       getAllContent()
     ]);
 
-    const opinions = allContent.filter(c => c.contentType === 'opinion').sort((a,b) => new Date((b as OpinionContent).postedOn).getTime() - new Date((a as OpinionContent).postedOn).getTime()) as OpinionContent[];
+    // Sorting is now handled by the Firestore query for more efficiency,
+    // but we still need to filter.
+    const opinions = allContent.filter(c => c.contentType === 'opinion') as OpinionContent[];
     const publications = allContent.filter(c => c.contentType === 'publication') as PublicationContent[];
-    const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing').sort((a,b) => (b as OngoingContent).startedOn.getTime() - (a as OngoingContent).startedOn.getTime()) as OngoingContent[];
+    const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing') as OngoingContent[];
 
     return {
       profile,

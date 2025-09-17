@@ -3,24 +3,40 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { admin, initializeFirebaseAdmin } from '@/lib/firebase-admin';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
 import { randomUUID } from 'crypto';
 import { cookies } from 'next/headers';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage as getAdminStorage } from 'firebase-admin/storage';
+
+
+// --- FIREBASE ADMIN INITIALIZATION (SERVER-SIDE) ---
+// This ensures Firebase Admin is initialized only once.
+if (!getApps().length) {
+  initializeApp({
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  });
+  console.log("Firebase Admin SDK initialized on the server.");
+}
+const db = getFirestore();
+const adminStorage = getAdminStorage();
+
 
 // --- AUTH HELPER ---
 async function verifyAuth() {
   const sessionCookie = cookies().get('__session')?.value;
   if (!sessionCookie) {
-    throw new Error('Unauthorized');
+    throw new Error('Unauthorized: No session cookie.');
   }
    if (sessionCookie !== process.env.ADMIN_SESSION_SECRET) {
-    throw new Error('Invalid session');
+    throw new Error('Unauthorized: Invalid session secret.');
   }
 }
 
-// --- NEW LOGIN ACTION ---
+// --- LOGIN ACTION ---
 const loginSchema = z.object({
   code: z.string().min(1, "Kode akses harus diisi."),
 });
@@ -40,7 +56,7 @@ export async function handleLogin(prevState: any, formData: FormData) {
 
     const sessionSecret = process.env.ADMIN_SESSION_SECRET;
     if (!sessionSecret) {
-        console.error("ADMIN_SESSION_SECRET is not set in .env");
+        console.error("FATAL: ADMIN_SESSION_SECRET is not set in .env");
         return { success: false, message: 'Konfigurasi server error.', errors: null };
     }
 
@@ -51,14 +67,14 @@ export async function handleLogin(prevState: any, formData: FormData) {
         path: '/',
     });
     
-    revalidatePath('/');
+    // No revalidate needed, redirect will happen on client
     return { success: true, message: 'Login Berhasil!', errors: null };
 }
 
-// --- NEW LOGOUT ACTION ---
+// --- LOGOUT ACTION ---
 export async function handleLogout() {
     cookies().delete('__session');
-    revalidatePath('/');
+    revalidatePath('/'); // Revalidate to clear server-side caches
 }
 
 
@@ -70,10 +86,7 @@ const getSignedUrlSchema = z.object({
 
 export async function getSignedUploadUrl(prevState: any, formData: FormData) {
   await verifyAuth();
-  const firebaseAdmin = initializeFirebaseAdmin();
-  if (!firebaseAdmin) {
-    return { success: false, message: 'Firebase Admin is not initialized. Cannot get signed URL.' };
-  }
+  
   const validatedFields = getSignedUrlSchema.safeParse({
     fileName: formData.get('fileName'),
     fileType: formData.get('fileType'),
@@ -87,7 +100,7 @@ export async function getSignedUploadUrl(prevState: any, formData: FormData) {
   const filePath = `uploads/${randomUUID()}-${fileName}`;
 
   try {
-    const bucket = firebaseAdmin.storage.bucket();
+    const bucket = adminStorage.bucket();
     const file = bucket.file(filePath);
     const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
     const [signedUrl] = await file.getSignedUrl({
@@ -105,7 +118,7 @@ export async function getSignedUploadUrl(prevState: any, formData: FormData) {
 }
 
 
-// --- CATEGORIZE ACTION (Remains the same, it's an AI flow) ---
+// --- CATEGORIZE ACTION ---
 
 const CategorizeSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -113,7 +126,7 @@ const CategorizeSchema = z.object({
 });
 
 export async function handleCategorize(prevState: any, formData: FormData) {
-  await verifyAuth(); // Secure this action
+  await verifyAuth(); 
   const validatedFields = CategorizeSchema.safeParse({
     title: formData.get('title'),
     body: formData.get('body'),
@@ -141,7 +154,7 @@ export async function handleCategorize(prevState: any, formData: FormData) {
   }
 }
 
-// --- PROFILE UPDATE ACTION (Migrated to Firestore) ---
+// --- PROFILE UPDATE ACTION ---
 
 const toolSchema = z.object({
   name: z.string().min(1, 'Nama perkakas harus diisi'),
@@ -158,10 +171,7 @@ const profileSchema = z.object({
 
 export async function updateProfile(prevState:any, formData: FormData) {
   await verifyAuth();
-  const firebase = initializeFirebaseAdmin();
-  if (!firebase || !firebase.db) {
-    return { success: false, message: 'Database tidak tersedia. Gagal memperbarui profil.' };
-  }
+  
   const validatedFields = profileSchema.safeParse({
     name: formData.get('name'),
     description: formData.get('description'),
@@ -176,13 +186,12 @@ export async function updateProfile(prevState:any, formData: FormData) {
   try {
     const { name, description, imageUrl, tools } = validatedFields.data;
     
-    // In Firestore, we update a specific document. Let's say 'main' in the 'profile' collection.
-    await firebase.db.collection('profile').doc('main').set({
+    await db.collection('profile').doc('main').set({
       name,
       description,
       imageUrl: imageUrl || null,
-      tools: tools.map(tool => ({ name: tool.name, imageUrl: tool.imageUrl })), // Ensure clean data
-    }, { merge: true }); // Merge true to avoid overwriting fields not in the form
+      tools: tools.map(tool => ({ name: tool.name, imageUrl: tool.imageUrl })),
+    }, { merge: true });
 
     revalidatePath('/');
     revalidatePath('/admin01');
@@ -193,7 +202,7 @@ export async function updateProfile(prevState:any, formData: FormData) {
   }
 }
 
-// --- OPINION UPLOAD ACTION (Migrated to Firestore) ---
+// --- OPINION UPLOAD ACTION ---
 
 const opinionUploadSchema = z.object({
     postedOn: z.string().min(1, "Waktu harus diisi"),
@@ -206,10 +215,7 @@ const opinionUploadSchema = z.object({
 
 export async function handleOpinionUpload(prevState: any, formData: FormData) {
     await verifyAuth();
-    const firebase = initializeFirebaseAdmin();
-    if (!firebase || !firebase.db) {
-      return { success: false, message: 'Database tidak tersedia. Gagal mengunggah opini.', errors: null };
-    }
+   
     const validatedFields = opinionUploadSchema.safeParse({
         postedOn: formData.get('postedOn'),
         title: formData.get('title'),
@@ -225,14 +231,14 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
     try {
         const { title, tags, content, imageUrl, postedOn } = validatedFields.data;
         
-        await firebase.db.collection('content').add({
+        await db.collection('content').add({
           contentType: 'opinion',
           title,
           tags,
           content,
           imageUrl,
           postedOn,
-          createdAt: new Date().toISOString(), // Add a timestamp for sorting
+          createdAt: new Date().toISOString(),
         });
 
         revalidatePath('/');
@@ -245,7 +251,7 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
     }
 }
 
-// --- PUBLICATION UPLOAD ACTION (Migrated to Firestore) ---
+// --- PUBLICATION UPLOAD ACTION ---
 
 const publicationUploadSchema = z.object({
     publishedOn: z.string().min(1, "Waktu harus diisi"),
@@ -259,10 +265,7 @@ const publicationUploadSchema = z.object({
 
 export async function handlePublicationUpload(prevState: any, formData: FormData) {
     await verifyAuth();
-    const firebase = initializeFirebaseAdmin();
-    if (!firebase || !firebase.db) {
-      return { success: false, message: 'Database tidak tersedia. Gagal mengunggah publikasi.', errors: null };
-    }
+    
     const validatedFields = publicationUploadSchema.safeParse({
         publishedOn: formData.get('publishedOn'),
         title: formData.get('title'),
@@ -279,9 +282,9 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
     
     try {
         const { title, tags, description, fileUrl, status, imageUrl, publishedOn } = validatedFields.data;
-        const viewUrl = fileUrl; // For now, viewUrl is the same as fileUrl.
+        const viewUrl = fileUrl; 
         
-        await firebase.db.collection('content').add({
+        await db.collection('content').add({
           contentType: 'publication',
           title,
           tags,
@@ -304,7 +307,7 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
     }
 }
 
-// --- ONGOING RESEARCH UPLOAD ACTION (Migrated to Firestore) ---
+// --- ONGOING RESEARCH UPLOAD ACTION ---
 
 const ongoingUploadSchema = z.object({
     startedOn: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Format tanggal tidak valid." }),
@@ -316,10 +319,7 @@ const ongoingUploadSchema = z.object({
 
 export async function handleOngoingUpload(prevState: any, formData: FormData) {
     await verifyAuth();
-    const firebase = initializeFirebaseAdmin();
-    if (!firebase || !firebase.db) {
-      return { success: false, message: 'Database tidak tersedia. Gagal mengunggah riset.', errors: null };
-    }
+   
     const validatedFields = ongoingUploadSchema.safeParse({
         startedOn: formData.get('startedOn'),
         title: formData.get('title'),
@@ -335,7 +335,7 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
     try {
         const { title, tags, description, imageUrl, startedOn } = validatedFields.data;
 
-        await firebase.db.collection('content').add({
+        await db.collection('content').add({
           contentType: 'ongoing',
           title,
           tags,
@@ -355,18 +355,15 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
     }
 }
 
-// --- DELETE CONTENT ACTION (Migrated to Firestore) ---
+// --- DELETE CONTENT ACTION ---
 export async function handleDeleteContent(contentId: string) {
   await verifyAuth();
-  const firebase = initializeFirebaseAdmin();
-  if (!firebase || !firebase.db) {
-    return { success: false, message: 'Database tidak tersedia. Gagal menghapus konten.' };
-  }
+  
   if (!contentId || typeof contentId !== 'string') {
     return { success: false, message: 'ID Konten tidak valid.' };
   }
   try {
-    await firebase.db.collection('content').doc(contentId).delete();
+    await db.collection('content').doc(contentId).delete();
 
     revalidatePath('/admin01');
     revalidatePath('/');
@@ -382,7 +379,7 @@ export async function handleDeleteContent(contentId: string) {
 }
 
 
-// --- FEEDBACK SUBMIT ACTION (Flow remains the same, it writes to Firestore) ---
+// --- FEEDBACK SUBMIT ACTION ---
 
 const feedbackSchema = z.object({
   name: z.string().min(1, 'Nama harus diisi.'),
@@ -405,6 +402,7 @@ export async function handleFeedbackSubmit(prevState: any, formData: FormData) {
   }
 
   try {
+    // This flow uses its own internal admin initialization
     const {success} = await saveFeedback(validatedFields.data);
     if (!success) {
         return {

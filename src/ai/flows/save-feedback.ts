@@ -9,7 +9,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { initializeFirebaseAdmin } from '@/lib/firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps } from 'firebase-admin/app';
 
 const SaveFeedbackInputSchema = z.object({
   name: z.string().describe('The name of the person giving feedback.'),
@@ -30,13 +31,20 @@ const saveFeedbackFlow = ai.defineFlow(
     outputSchema: z.object({success: z.boolean()}),
   },
   async input => {
-    const firebase = initializeFirebaseAdmin();
-    if (!firebase || !firebase.db) {
+    // Genkit flows run in a separate server environment and need their own initialization.
+    if (!getApps().length) {
+        initializeApp({
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        });
+    }
+    const db = getFirestore();
+
+    if (!db) {
       console.error("Database not initialized, can't save feedback.");
       return {success: false};
     }
     // Data dari formulir feedback disimpan di koleksi 'feedback' di Cloud Firestore.
-    await firebase.db.collection('feedback').add({
+    await db.collection('feedback').add({
       ...input,
       createdAt: new Date().toISOString(),
     });
