@@ -41,8 +41,8 @@ export default function LoginPage() {
           title: 'Login Berhasil',
           description: 'Anda akan diarahkan ke panel admin.',
         });
-        // router.push('/admin01'); // This can be unreliable
-        router.refresh(); // This re-triggers middleware, which will redirect to /admin01
+        router.push('/admin01'); // Force redirect to admin panel
+        // router.refresh(); // This can be unreliable at times.
       } else {
         throw new Error(sessionResult.message || 'Gagal membuat sesi di server.');
       }
@@ -59,6 +59,8 @@ export default function LoginPage() {
           default:
             errorMessage = 'Gagal login. Periksa kembali kredensial Anda.';
         }
+      } else if (error.message) {
+          errorMessage = error.message;
       }
       setError(errorMessage);
       toast({

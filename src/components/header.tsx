@@ -59,7 +59,7 @@ export default function Header() {
 
   const onLogout = async () => {
     await handleLogout();
-    Cookies.remove('__session');
+    Cookies.remove('__session'); // Ensure cookie is cleared on the client
     setIsLoggedIn(false);
     router.push('/login');
     router.refresh();
