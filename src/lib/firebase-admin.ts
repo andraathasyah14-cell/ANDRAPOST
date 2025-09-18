@@ -1,3 +1,4 @@
+
 // This file is intentionally left blank.
 // All server-side Firebase Admin logic has been centralized into the `actions.ts` and `data.ts` files
 // to simplify initialization and resolve persistent configuration errors.

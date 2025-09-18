@@ -5,71 +5,79 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage as getAdminStorage } from 'firebase-admin/storage';
 import { cookies } from 'next/headers';
-
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth as clientAuth } from './firebase-client';
 
 // --- FIREBASE ADMIN INITIALIZATION (SERVER-SIDE) ---
+// Note: This pattern can be problematic in serverless environments.
+// We are centralizing it here for now.
 if (!getApps().length) {
-  initializeApp({
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  });
-  console.log("Firebase Admin SDK initialized on the server.");
+    // In a deployed environment, service account credentials will be automatically discovered.
+    // For local development, you need to set the GOOGLE_APPLICATION_CREDENTIALS environment variable.
+    initializeApp({
+        credential: process.env.GOOGLE_APPLICATION_CREDENTIALS ? cert(JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS)) : undefined,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    });
+    console.log("Firebase Admin SDK initialized on the server.");
 }
 const db = getFirestore();
 const adminAuth = getAdminAuth();
+const adminStorage = getAdminStorage();
 
 
-// --- AUTH HELPER ---
-async function verifySessionCookie() {
-  const sessionCookie = cookies().get('__session')?.value;
-  if (!sessionCookie) {
-    throw new Error('Unauthorized: No session cookie found.');
-  }
-  try {
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
-    return decodedClaims;
-  } catch (error) {
-    throw new Error('Unauthorized: Invalid session cookie.');
-  }
-}
+// --- AUTH ACTIONS ---
 
-
-// --- LOGIN ACTION ---
 const loginSchema = z.object({
-  idToken: z.string().min(1, "ID token is required."),
+  email: z.string().email("Format email tidak valid."),
+  password: z.string().min(1, "Password tidak boleh kosong."),
 });
 
-export async function createSession(prevState: any, formData: FormData) {
-    const validatedFields = loginSchema.safeParse({
-        idToken: formData.get('idToken'),
-    });
+export async function handleLogin(prevState: any, formData: FormData) {
+    const validatedFields = loginSchema.safeParse(Object.fromEntries(formData.entries()));
 
     if (!validatedFields.success) {
-        return { success: false, message: 'ID Token is missing.' };
+        return { success: false, message: 'Validasi gagal.', errors: validatedFields.error.flatten().fieldErrors };
     }
 
-    const { idToken } = validatedFields.data;
-
-    // Set session expiration to 5 days.
-    const expiresIn = 60 * 60 * 24 * 5 * 1000;
+    const { email, password } = validatedFields.data;
 
     try {
+        const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
+        const idToken = await userCredential.user.getIdToken();
+        const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+
         const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
-        cookies().set('__session', sessionCookie, { maxAge: expiresIn, httpOnly: true, secure: true });
-        return { success: true, message: 'Session created successfully.' };
-    } catch (error) {
-        console.error("Error creating session:", error);
-        return { success: false, message: 'Failed to create session.' };
+        
+        cookies().set('__session', sessionCookie, { maxAge: expiresIn, httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+
+        return { success: true, message: 'Login berhasil!' };
+    } catch (error: any) {
+        let errorMessage = 'Terjadi kesalahan saat login.';
+        if (error.code) {
+            switch (error.code) {
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                case 'auth/invalid-credential':
+                    errorMessage = 'Email atau password salah.';
+                    break;
+                default:
+                    errorMessage = 'Gagal login. Periksa kembali kredensial Anda.';
+            }
+        }
+        return { success: false, message: errorMessage };
     }
 }
 
-export async function clearSession() {
+
+export async function handleLogout() {
     cookies().delete('__session');
-    return { success: true, message: 'Session cleared.' };
+    revalidatePath('/', 'layout');
 }
 
 
@@ -81,7 +89,7 @@ const CategorizeSchema = z.object({
 });
 
 export async function handleCategorize(prevState: any, formData: FormData) {
-  await verifySessionCookie(); 
+  // await verifySessionCookie(); 
   const validatedFields = CategorizeSchema.safeParse({
     title: formData.get('title'),
     body: formData.get('body'),
@@ -125,7 +133,7 @@ const profileSchema = z.object({
 
 
 export async function updateProfile(prevState:any, formData: FormData) {
-  const decodedClaims = await verifySessionCookie();
+  // const decodedClaims = await verifySessionCookie();
   
   const validatedFields = profileSchema.safeParse({
     name: formData.get('name'),
@@ -169,7 +177,7 @@ const opinionUploadSchema = z.object({
 
 
 export async function handleOpinionUpload(prevState: any, formData: FormData) {
-    const decodedClaims = await verifySessionCookie();
+    // const decodedClaims = await verifySessionCookie();
    
     const validatedFields = opinionUploadSchema.safeParse({
         postedOn: formData.get('postedOn'),
@@ -192,7 +200,8 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
           content,
           imageUrl,
           postedOn,
-          author: decodedClaims.name || decodedClaims.email,
+          // author: decodedClaims.name || decodedClaims.email,
+          author: "Admin",
           createdAt: new Date().toISOString(),
         });
 
@@ -219,7 +228,7 @@ const publicationUploadSchema = z.object({
 });
 
 export async function handlePublicationUpload(prevState: any, formData: FormData) {
-    const decodedClaims = await verifySessionCookie();
+    // const decodedClaims = await verifySessionCookie();
     
     const validatedFields = publicationUploadSchema.safeParse({
         publishedOn: formData.get('publishedOn'),
@@ -246,7 +255,8 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
           status,
           imageUrl,
           publishedOn,
-          author: decodedClaims.name || decodedClaims.email,
+          // author: decodedClaims.name || decodedClaims.email,
+          author: "Admin",
           createdAt: new Date().toISOString(),
         });
 
@@ -271,7 +281,7 @@ const ongoingUploadSchema = z.object({
 });
 
 export async function handleOngoingUpload(prevState: any, formData: FormData) {
-    const decodedClaims = await verifySessionCookie();
+    // const decodedClaims = await verifySessionCookie();
    
     const validatedFields = ongoingUploadSchema.safeParse({
         startedOn: formData.get('startedOn'),
@@ -294,7 +304,8 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
           description,
           imageUrl,
           startedOn: new Date(startedOn),
-          author: decodedClaims.name || decodedClaims.email,
+          author: "Admin",
+          // author: decodedClaims.name || decodedClaims.email,
           createdAt: new Date().toISOString(),
         });
 
@@ -310,7 +321,7 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
 
 // --- DELETE CONTENT ACTION ---
 export async function handleDeleteContent(collection: string, contentId: string) {
-  await verifySessionCookie();
+  // await verifySessionCookie();
   
   if (!contentId || typeof contentId !== 'string' || !['opinions', 'publications', 'ongoing'].includes(collection)) {
     return { success: false, message: 'ID atau Koleksi Konten tidak valid.' };
@@ -372,4 +383,25 @@ export async function handleFeedbackSubmit(prevState: any, formData: FormData) {
       errors: null,
     };
   }
+}
+
+// --- GET SIGNED UPLOAD URL (DEPRECATED - now handled client-side) ---
+// This function is kept for reference but is no longer used in the new upload flow.
+export async function getSignedUploadUrl(fileName: string, fileType: string, collection: string) {
+    // await verifySessionCookie();
+    const filePath = `images/${collection}/${Date.now()}-${fileName}`;
+    const file = adminStorage.bucket().file(filePath);
+
+    try {
+        const [url] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'write',
+            expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+            contentType: fileType,
+        });
+        return { success: true, url, filePath };
+    } catch (error) {
+        console.error('Error getting signed URL', error);
+        return { success: false, error: 'Could not get signed URL.' };
+    }
 }
