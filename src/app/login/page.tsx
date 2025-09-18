@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -25,6 +26,7 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    let sessionResult: { success: boolean; message?: string; } | null = null;
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -33,7 +35,7 @@ export default function LoginPage() {
       const formData = new FormData();
       formData.append('idToken', idToken);
 
-      const sessionResult = await createSession(null, formData);
+      sessionResult = await createSession(null, formData);
 
       if (sessionResult.success) {
         toast({
