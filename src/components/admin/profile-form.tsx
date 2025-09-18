@@ -36,9 +36,9 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-interface ProfileData extends Profile {
-    totalPublications: number;
-    totalOpinions: number;
+interface ProfileData extends Partial<Profile> {
+    totalPublications?: number;
+    totalOpinions?: number;
 }
 
 interface ProfileFormProps {
@@ -64,10 +64,10 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: profileData.name || '',
-      description: profileData.description || '',
-      tools: profileData.tools || [],
-      imageUrl: profileData.imageUrl || 'https://picsum.photos/seed/profile/400/400',
+      name: profileData?.name || '',
+      description: profileData?.description || '',
+      tools: profileData?.tools || [],
+      imageUrl: profileData?.imageUrl || 'https://picsum.photos/seed/profile/400/400',
     },
   });
   
@@ -88,10 +88,10 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
   
   useEffect(() => {
     form.reset({
-      name: profileData.name,
-      description: profileData.description,
-      tools: profileData.tools,
-      imageUrl: profileData.imageUrl || 'https://picsum.photos/seed/profile/400/400',
+      name: profileData?.name || '',
+      description: profileData?.description || '',
+      tools: profileData?.tools || [],
+      imageUrl: profileData?.imageUrl || 'https://picsum.photos/seed/profile/400/400',
     });
   }, [profileData, form]);
 
@@ -204,14 +204,14 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
             <div className="flex items-center">
               <BookOpen className="h-6 w-6 text-primary mr-4" />
               <div>
-                <p className="text-xl font-bold">{profileData.totalPublications}</p>
+                <p className="text-xl font-bold">{profileData.totalPublications || 0}</p>
                 <p className="text-sm text-muted-foreground">Publikasi</p>
               </div>
             </div>
             <div className="flex items-center">
               <MessageSquare className="h-6 w-6 text-accent mr-4" />
               <div>
-                <p className="text-xl font-bold">{profileData.totalOpinions}</p>
+                <p className="text-xl font-bold">{profileData.totalOpinions || 0}</p>
                 <p className="text-sm text-muted-foreground">Opini</p>
               </div>
             </div>

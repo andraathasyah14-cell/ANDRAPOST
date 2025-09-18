@@ -27,8 +27,10 @@ export default async function AdminPage() {
   }
 
   const { profile, opinions, publications, ongoingResearches } = await getHomePageData();
+  
+  // Defensive check to prevent crash on spread operator if profile is null/undefined
   const profileWithTotals = {
-    ...profile,
+    ...(profile || {}),
     totalPublications: publications.length,
     totalOpinions: opinions.length,
   };
