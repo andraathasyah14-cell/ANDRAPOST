@@ -19,6 +19,8 @@ export async function verifySession() {
     const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
     return { isLoggedIn: true, user: decodedClaims };
   } catch (error) {
+    // Session cookie is invalid. Clear it.
+    cookies().delete('__session');
     return { isLoggedIn: false, user: null };
   }
 }
@@ -184,13 +186,15 @@ async function addContent(collectionName: 'opinions' | 'publications' | 'ongoing
 
 export async function handleOpinionUpload(prevState: any, formData: FormData) {
     const { user } = await verifySession();
+    if (!user) return { success: false, message: "Akses ditolak" };
+
     const validatedFields = opinionSchema.safeParse({
         title: formData.get('title'),
         tags: formData.getAll('tags'),
         imageUrl: formData.get('imageUrl'),
         postedOn: formData.get('postedOn'),
         content: formData.get('content'),
-        author: user?.name || user?.email,
+        author: user.name || user.email,
     });
 
     if (!validatedFields.success) {
@@ -207,6 +211,8 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
 
 export async function handlePublicationUpload(prevState: any, formData: FormData) {
      const { user } = await verifySession();
+    if (!user) return { success: false, message: "Akses ditolak" };
+    
     const validatedFields = publicationSchema.safeParse({
         title: formData.get('title'),
         tags: formData.getAll('tags'),
@@ -215,7 +221,7 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
         description: formData.get('description'),
         fileUrl: formData.get('fileUrl'),
         status: formData.get('status'),
-        author: user?.name || user?.email,
+        author: user.name || user.email,
     });
 
     if (!validatedFields.success) {
@@ -232,13 +238,15 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
 
 export async function handleOngoingUpload(prevState: any, formData: FormData) {
     const { user } = await verifySession();
+    if (!user) return { success: false, message: "Akses ditolak" };
+
     const validatedFields = ongoingSchema.safeParse({
         title: formData.get('title'),
         tags: formData.getAll('tags'),
         imageUrl: formData.get('imageUrl'),
         startedOn: formData.get('startedOn'),
         description: formData.get('description'),
-        author: user?.name || user?.email,
+        author: user.name || user.email,
     });
 
     if (!validatedFields.success) {
@@ -310,18 +318,20 @@ export async function handleDeleteContent(collectionName: string, docId: string)
         // Hapus file dari storage jika ada
         if (data?.imageUrl) {
             try {
-                const imageRef = adminStorage.bucket().file(new URL(data.imageUrl).pathname.split('/').slice(2).join('/'));
+                const imagePath = new URL(data.imageUrl).pathname.substring(1).split('/').slice(2).join('/');
+                const imageRef = adminStorage.bucket().file(decodeURIComponent(imagePath));
                 await imageRef.delete();
-            } catch (e) {
-                console.warn("Gagal menghapus gambar:", e); // Jangan gagalkan proses jika file tidak ada
+            } catch (e: any) {
+                 if (e.code !== 404) console.warn("Gagal menghapus gambar:", e);
             }
         }
         if (data?.fileUrl) {
              try {
-                const fileRef = adminStorage.bucket().file(new URL(data.fileUrl).pathname.split('/').slice(2).join('/'));
+                const filePath = new URL(data.fileUrl).pathname.substring(1).split('/').slice(2).join('/');
+                const fileRef = adminStorage.bucket().file(decodeURIComponent(filePath));
                 await fileRef.delete();
-            } catch (e) {
-                console.warn("Gagal menghapus file:", e);
+            } catch (e: any) {
+                 if (e.code !== 404) console.warn("Gagal menghapus file:", e);
             }
         }
 

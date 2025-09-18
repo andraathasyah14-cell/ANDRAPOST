@@ -23,11 +23,11 @@ export default async function Home() {
       <main>
         <HeroSection 
           profile={data.profile}
-          opinions={data.opinions} 
-          publications={data.publications} 
+          totalOpinions={data.opinions.length} 
+          totalPublications={data.publications.length} 
         />
-        <OpinionSection opinions={data.opinions} profile={data.profile} />
-        <PublicationSection publications={data.publications} profile={data.profile} />
+        <OpinionSection opinions={data.opinions} />
+        <PublicationSection publications={data.publications} />
         <OngoingSection ongoingResearches={data.ongoingResearches} />
         <FeedbackSection />
       </main>

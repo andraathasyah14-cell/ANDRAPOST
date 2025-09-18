@@ -1,19 +1,16 @@
 
-// src/components/sections/hero-section.tsx
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen, MessageSquare } from 'lucide-react';
-import type { OpinionContent, PublicationContent, Profile } from '@/lib/data';
+import type { Profile } from '@/lib/data';
 
 interface HeroSectionProps {
   profile: Profile;
-  opinions: OpinionContent[];
-  publications: PublicationContent[];
+  totalOpinions: number;
+  totalPublications: number;
 }
 
-export default function HeroSection({ profile, opinions, publications }: HeroSectionProps) {
-  const totalPublications = publications.length;
-  const totalOpinions = opinions.length;
+export default function HeroSection({ profile, totalOpinions, totalPublications }: HeroSectionProps) {
 
   return (
     <section id="profile" className="py-16 md:py-24 bg-card/50">

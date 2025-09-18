@@ -122,7 +122,7 @@ export default async function AdminPage() {
                     <CardDescription>
                         Perbarui informasi yang ditampilkan di halaman utama website Anda.
                     </CardDescription>
-                </CardHeader>
+                </Header>
                 <CardContent>
                    <ProfileForm profileData={profileWithTotals} />
                 </CardContent>
@@ -136,7 +136,7 @@ export default async function AdminPage() {
                     <CardDescription>
                         Manfaatkan AI untuk membantu alur kerja konten Anda.
                     </CardDescription>
-                </CardHeader>
+                </Header>
                 <CardContent>
                    <p>Gunakan <Link href="/admin01/categorize" className="font-medium text-primary underline">Alat Kategorisasi</Link> untuk mendapatkan saran tag otomatis untuk unggahan Anda berikutnya.</p>
                 </CardContent>

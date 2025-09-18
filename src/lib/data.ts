@@ -43,13 +43,13 @@ export interface ContentBase {
   title: string;
   tags: Tag[];
   imageUrl: string;
+  author: string;
 }
 
 // Specific content types extending the base
 export interface OpinionContent extends ContentBase {
   postedOn: string; // "YYYY-MM-DD"
   content: string;
-  author: string;
 }
 
 export interface PublicationContent extends ContentBase {
@@ -57,13 +57,11 @@ export interface PublicationContent extends ContentBase {
   status: 'public' | 'private';
   fileUrl: string;
   description: string;
-  author: string;
 }
 
 export interface OngoingContent extends ContentBase {
   startedOn: Date;
   description: string;
-  author: string;
 }
 
 
@@ -90,6 +88,7 @@ export async function getProfile(): Promise<Profile> {
     
     if (!profileDoc.exists) {
       console.warn("Profile document not found in Firestore, returning default.");
+      // Optionally create the default profile in Firestore if it doesn't exist
       await adminDb.collection('profile').doc('main').set(defaultProfile);
       return defaultProfile;
     }

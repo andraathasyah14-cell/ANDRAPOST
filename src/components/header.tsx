@@ -16,17 +16,27 @@ import { ThemeToggle } from './theme-toggle';
 import { navLinks } from './main-nav';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/components/auth-provider';
 import { handleLogout } from '@/lib/actions';
-import { auth } from '@/lib/firebase-client';
-
+import Cookies from 'js-cookie';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
-  const { user, loading } = useAuth();
 
+  useEffect(() => {
+    // Check for session cookie on component mount and on change
+    const checkAuth = () => {
+      const sessionCookie = Cookies.get('__session');
+      setIsLoggedIn(!!sessionCookie);
+    };
+    checkAuth();
+    
+    // Periodically check in case cookie expires
+    const interval = setInterval(checkAuth, 1000); 
+    return () => clearInterval(interval);
+  }, []);
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 10);
@@ -49,16 +59,14 @@ export default function Header() {
 
   const onLogout = async () => {
     await handleLogout();
-    await auth.signOut();
+    Cookies.remove('__session');
+    setIsLoggedIn(false);
     router.push('/login');
     router.refresh();
   };
   
   const AuthButton = () => {
-    if (loading) {
-      return <div className="h-10 w-24 rounded-md bg-muted animate-pulse" />
-    }
-    if (user) {
+    if (isLoggedIn) {
       return (
         <div className="flex items-center gap-2">
           <Button asChild>
