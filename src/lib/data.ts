@@ -1,14 +1,18 @@
 
 'use server';
 import 'server-only';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 // --- FIREBASE ADMIN INITIALIZATION (SERVER-SIDE) ---
+// This check ensures we don't try to re-initialize an app that's already been initialized,
+// for instance, by the logic in `actions.ts`.
 if (!getApps().length) {
-  initializeApp({
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  });
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY) : undefined;
+    initializeApp({
+        credential: serviceAccount ? cert(serviceAccount) : undefined,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
    console.log("Firebase Admin SDK initialized in data.ts.");
 }
 const db = getFirestore();
