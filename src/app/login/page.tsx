@@ -41,8 +41,8 @@ export default function LoginPage() {
           title: 'Login Berhasil',
           description: 'Anda akan diarahkan ke panel admin.',
         });
-        router.push('/admin01'); // Force redirect to admin panel
-        // router.refresh(); // This can be unreliable at times.
+        // Force a full page reload to ensure middleware is triggered correctly
+        window.location.href = '/admin01';
       } else {
         throw new Error(sessionResult.message || 'Gagal membuat sesi di server.');
       }
