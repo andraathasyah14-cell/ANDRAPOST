@@ -16,7 +16,7 @@ import { ThemeToggle } from './theme-toggle';
 import { navLinks } from './main-nav';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import { useAuth } from '@/components/auth-provider';
 import { handleLogout } from '@/lib/actions';
 import { auth } from '@/lib/firebase-client';
 
@@ -25,11 +25,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    setIsAdmin(!!Cookies.get('__session'));
-  }, []);
+  const { user, loading } = useAuth();
 
 
   const handleScroll = useCallback(() => {
@@ -53,13 +49,16 @@ export default function Header() {
 
   const onLogout = async () => {
     await handleLogout();
-    setIsAdmin(false);
+    await auth.signOut();
     router.push('/login');
     router.refresh();
   };
   
   const AuthButton = () => {
-    if (isAdmin) {
+    if (loading) {
+      return <div className="h-10 w-24 rounded-md bg-muted animate-pulse" />
+    }
+    if (user) {
       return (
         <div className="flex items-center gap-2">
           <Button asChild>

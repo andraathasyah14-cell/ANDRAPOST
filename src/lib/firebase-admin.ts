@@ -1,6 +1,37 @@
+// src/lib/firebase-admin.ts
+import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 
-// This file is intentionally left blank.
-// All server-side Firebase Admin logic has been centralized into the `actions.ts` and `data.ts` files
-// to simplify initialization and resolve persistent configuration errors.
-// This new architecture ensures that the Firebase Admin SDK is initialized only once
-// in the server environment where it is actively used.
+function initializeAdminApp(): App {
+  if (getApps().some(app => app.name === 'admin')) {
+    return getApps().find(app => app.name === 'admin')!;
+  }
+
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!serviceAccountKey) {
+    // In environments like Vercel, GOOGLE_APPLICATION_CREDENTIALS might be set differently
+    // or default credentials are used. For local, service account key is best.
+    console.log("Initializing Firebase Admin with default credentials...");
+    return initializeApp({
+       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    }, 'admin');
+  }
+
+  const credentials = JSON.parse(serviceAccountKey);
+  
+  console.log("Initializing Firebase Admin with service account key...");
+  return initializeApp({
+    credential: cert(credentials),
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  }, 'admin');
+}
+
+const adminApp = initializeAdminApp();
+
+export const adminAuth = getAuth(adminApp);
+export const adminDb = getFirestore(adminApp);
+export const adminStorage = getStorage(adminApp);
