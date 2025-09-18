@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -41,11 +40,10 @@ export default function LoginPage() {
           title: 'Login Berhasil',
           description: 'Anda akan diarahkan ke panel admin.',
         });
-        // This sequence ensures the page state is updated with the new cookie
-        // before navigating to the protected route.
+        // This is the correct sequence to ensure the page state is updated
+        // with the new cookie before navigating to the protected route.
         router.refresh(); // Crucial step to re-fetch server state and recognize the new cookie
         router.push('/admin01'); // Now this navigation will succeed
-
       } else {
         throw new Error(sessionResult.message || 'Gagal membuat sesi di server.');
       }
@@ -71,7 +69,12 @@ export default function LoginPage() {
         description: errorMessage,
         variant: 'destructive',
       });
-      setIsLoading(false); // Stop loading on error
+    } finally {
+      // We only want to stop loading if there was an error.
+      // On success, the page will navigate away, so we don't need to change state.
+      if (error) {
+        setIsLoading(false);
+      }
     }
   };
   
@@ -101,6 +104,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
                <div className="space-y-2">
@@ -113,6 +117,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
