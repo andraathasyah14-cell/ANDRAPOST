@@ -1,21 +1,7 @@
 
 'use server';
 import 'server-only';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-
-// --- FIREBASE ADMIN INITIALIZATION (SERVER-SIDE) ---
-// This check ensures we don't try to re-initialize an app that's already been initialized,
-// for instance, by the logic in `actions.ts`.
-if (!getApps().length) {
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY) : undefined;
-    initializeApp({
-        credential: serviceAccount ? cert(serviceAccount) : undefined,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-   console.log("Firebase Admin SDK initialized in data.ts.");
-}
-const db = getFirestore();
+import { adminDb } from '@/lib/firebase-admin';
 
 // --- Data Type Definitions ---
 
@@ -100,11 +86,11 @@ const defaultProfile: Profile = {
 
 export async function getProfile(): Promise<Profile> {
   try {
-    const profileDoc = await db.collection('profile').doc('main').get();
+    const profileDoc = await adminDb.collection('profile').doc('main').get();
     
     if (!profileDoc.exists) {
       console.warn("Profile document not found in Firestore, returning default.");
-      await db.collection('profile').doc('main').set(defaultProfile);
+      await adminDb.collection('profile').doc('main').set(defaultProfile);
       return defaultProfile;
     }
 
@@ -118,7 +104,7 @@ export async function getProfile(): Promise<Profile> {
 
 async function fetchCollection<T extends ContentBase>(collectionName: string): Promise<T[]> {
     try {
-        const snapshot = await db.collection(collectionName).orderBy('createdAt', 'desc').get();
+        const snapshot = await adminDb.collection(collectionName).orderBy('createdAt', 'desc').get();
         if (snapshot.empty) {
             return [];
         }

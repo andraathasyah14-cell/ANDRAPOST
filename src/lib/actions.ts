@@ -3,32 +3,10 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { saveFeedback, type SaveFeedbackInput } from '@/ai/flows/save-feedback';
 import { categorizeContent, CategorizeContentInput } from '@/ai/flows/categorize-content';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
-
-// --- FIREBASE ADMIN INITIALIZATION (SERVER-SIDE) ---
-if (!getApps().length) {
-    try {
-        const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY) : undefined;
-        initializeApp({
-            credential: serviceAccount ? cert(serviceAccount) : undefined,
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-            storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        });
-        console.log("Firebase Admin SDK initialized on the server.");
-    } catch (e) {
-        console.error('Firebase Admin initialization error:', e);
-    }
-}
-const adminAuth = getAdminAuth();
-export const adminDb = getFirestore();
-export const adminStorage = getStorage();
-
+import { adminAuth, adminDb, adminStorage } from '@/lib/firebase-admin';
 
 // --- AUTH ACTIONS ---
 
