@@ -42,8 +42,8 @@ export default function LoginPage() {
         });
         // This sequence ensures the page state is updated with the new cookie
         // before navigating to the protected route.
-        router.refresh();
-        router.push('/admin01');
+        router.refresh(); // Crucial step to re-fetch server state and recognize the new cookie
+        router.push('/admin01'); // Now this navigation will succeed
 
       } else {
         throw new Error(sessionResult.message || 'Gagal membuat sesi di server.');
@@ -70,7 +70,13 @@ export default function LoginPage() {
         description: errorMessage,
         variant: 'destructive',
       });
-      setIsLoading(false); // Only set loading to false on error
+    } finally {
+        // Set loading to false only on error or if the push navigation fails to happen
+        // in a real scenario you might want more sophisticated logic here.
+        // For now, we only stop loading on error.
+        if(!sessionResult?.success) {
+             setIsLoading(false);
+        }
     } 
   };
   
