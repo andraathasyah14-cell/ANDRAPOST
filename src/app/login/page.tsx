@@ -41,7 +41,8 @@ export default function LoginPage() {
           title: 'Login Berhasil',
           description: 'Anda akan diarahkan ke panel admin.',
         });
-        router.push('/admin01');
+        // router.push('/admin01'); // This can be unreliable
+        router.refresh(); // This re-triggers middleware, which will redirect to /admin01
       } else {
         throw new Error(sessionResult.message || 'Gagal membuat sesi di server.');
       }
