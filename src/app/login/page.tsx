@@ -26,7 +26,6 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    let sessionResult: { success: boolean; message?: string; } | null = null;
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -35,7 +34,7 @@ export default function LoginPage() {
       const formData = new FormData();
       formData.append('idToken', idToken);
 
-      sessionResult = await createSession(null, formData);
+      const sessionResult = await createSession(null, formData);
 
       if (sessionResult.success) {
         toast({
@@ -72,14 +71,8 @@ export default function LoginPage() {
         description: errorMessage,
         variant: 'destructive',
       });
-    } finally {
-        // Set loading to false only on error or if the push navigation fails to happen
-        // in a real scenario you might want more sophisticated logic here.
-        // For now, we only stop loading on error.
-        if(!sessionResult?.success) {
-             setIsLoading(false);
-        }
-    } 
+      setIsLoading(false); // Stop loading on error
+    }
   };
   
   return (
