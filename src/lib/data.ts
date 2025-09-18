@@ -87,13 +87,21 @@ export async function getProfile(): Promise<Profile> {
     const profileDoc = await adminDb.collection('profile').doc('main').get();
     
     if (!profileDoc.exists) {
-      console.warn("Profile document not found in Firestore, returning default.");
-      // Optionally create the default profile in Firestore if it doesn't exist
-      await adminDb.collection('profile').doc('main').set(defaultProfile);
+      console.warn("Profile document not found in Firestore. Returning default profile data.");
+      // Do NOT write to the database during a read operation in a server component.
+      // This prevents potential infinite loops during development hot-reloads.
+      // The profile can be created/updated via the admin panel form.
       return defaultProfile;
     }
 
-    return profileDoc.data() as Profile;
+    // Ensure all fields exist, falling back to defaults if necessary.
+    const data = profileDoc.data();
+    return {
+      name: data?.name || defaultProfile.name,
+      description: data?.description || defaultProfile.description,
+      tools: data?.tools || defaultProfile.tools,
+      imageUrl: data?.imageUrl || defaultProfile.imageUrl,
+    };
 
   } catch (error) {
     console.error('Error fetching profile from Firestore, returning default profile:', error);
