@@ -41,8 +41,11 @@ export default function LoginPage() {
           title: 'Login Berhasil',
           description: 'Anda akan diarahkan ke panel admin.',
         });
-        // Force a full page reload to ensure middleware is triggered correctly
-        window.location.href = '/admin01';
+        // This sequence ensures the page state is updated with the new cookie
+        // before navigating to the protected route.
+        router.refresh();
+        router.push('/admin01');
+
       } else {
         throw new Error(sessionResult.message || 'Gagal membuat sesi di server.');
       }
@@ -68,9 +71,8 @@ export default function LoginPage() {
         description: errorMessage,
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
-    }
+      setIsLoading(false); // Only set loading to false on error
+    } 
   };
   
   return (
