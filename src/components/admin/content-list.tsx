@@ -23,6 +23,13 @@ import { useState } from 'react';
 
 
 type ContentItem = OpinionContent | PublicationContent | OngoingContent;
+type ContentType = 'opinions' | 'publications' | 'ongoing';
+
+interface ContentItemRowProps {
+  item: ContentItem;
+  collectionName: ContentType;
+  typeName: string;
+}
 
 interface ContentListProps {
   opinions: OpinionContent[];
@@ -30,7 +37,7 @@ interface ContentListProps {
   ongoingResearches: OngoingContent[];
 }
 
-function ContentItemRow({ item, typeName }: { item: ContentItem; typeName: string }) {
+function ContentItemRow({ item, collectionName, typeName }: ContentItemRowProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -43,8 +50,7 @@ function ContentItemRow({ item, typeName }: { item: ContentItem; typeName: strin
 
   const performDelete = async () => {
     setIsDeleting(true);
-    // Firestore uses string IDs
-    const result = await handleDeleteContent(item.id.toString());
+    const result = await handleDeleteContent(collectionName, item.id);
     if (result.success) {
       toast({
         title: 'Berhasil',
@@ -64,7 +70,7 @@ function ContentItemRow({ item, typeName }: { item: ContentItem; typeName: strin
     <div className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-muted/50 transition-colors">
       <div className="flex items-center gap-4">
         <Image 
-            src={item.image.imageUrl} 
+            src={item.imageUrl} 
             alt={item.title} 
             width={80} 
             height={45} 
@@ -112,7 +118,7 @@ export default function ContentList({ opinions, publications, ongoingResearches 
         <AccordionTrigger>Opini ({opinions.length})</AccordionTrigger>
         <AccordionContent>
           <div className="flex flex-col">
-            {opinions.length > 0 ? opinions.map(item => <ContentItemRow key={item.id} item={item} typeName="Opini" />) : <p className="p-4 text-muted-foreground">Belum ada opini yang diunggah.</p>}
+            {opinions.length > 0 ? opinions.map(item => <ContentItemRow key={item.id} item={item} collectionName="opinions" typeName="Opini" />) : <p className="p-4 text-muted-foreground">Belum ada opini yang diunggah.</p>}
           </div>
         </AccordionContent>
       </AccordionItem>
@@ -120,7 +126,7 @@ export default function ContentList({ opinions, publications, ongoingResearches 
         <AccordionTrigger>Publikasi ({publications.length})</AccordionTrigger>
         <AccordionContent>
           <div className="flex flex-col">
-             {publications.length > 0 ? publications.map(item => <ContentItemRow key={item.id} item={item} typeName="Publikasi" />) : <p className="p-4 text-muted-foreground">Belum ada publikasi yang diunggah.</p>}
+             {publications.length > 0 ? publications.map(item => <ContentItemRow key={item.id} item={item} collectionName="publications" typeName="Publikasi" />) : <p className="p-4 text-muted-foreground">Belum ada publikasi yang diunggah.</p>}
           </div>
         </AccordionContent>
       </AccordionItem>
@@ -128,7 +134,7 @@ export default function ContentList({ opinions, publications, ongoingResearches 
         <AccordionTrigger>Riset Ongoing ({ongoingResearches.length})</AccordionTrigger>
         <AccordionContent>
           <div className="flex flex-col">
-            {ongoingResearches.length > 0 ? ongoingResearches.map(item => <ContentItemRow key={item.id} item={item} typeName="Riset Ongoing" />) : <p className="p-4 text-muted-foreground">Belum ada riset yang diunggah.</p>}
+            {ongoingResearches.length > 0 ? ongoingResearches.map(item => <ContentItemRow key={item.id} item={item} collectionName="ongoing" typeName="Riset Ongoing" />) : <p className="p-4 text-muted-foreground">Belum ada riset yang diunggah.</p>}
           </div>
         </AccordionContent>
       </AccordionItem>

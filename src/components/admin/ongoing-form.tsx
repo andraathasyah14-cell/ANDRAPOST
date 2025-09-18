@@ -69,7 +69,7 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
 
     setUploadProgress({ percentage: 0, speed: '0 KB/s' });
     try {
-      const url = await handleImageUpload(file, (progress) => {
+      const url = await handleImageUpload(file, 'ongoing', (progress) => {
         setUploadProgress(progress);
       });
       setImageUrl(url);

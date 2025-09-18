@@ -1,15 +1,14 @@
 
 import { Button } from '@/components/ui/button';
-import type { OpinionContent, Profile } from '@/lib/data';
+import type { OpinionContent } from '@/lib/data';
 import OpinionList from './opinion-list';
 import Link from 'next/link';
 
 interface OpinionSectionProps {
     opinions: OpinionContent[];
-    profile: Profile;
 }
 
-export default function OpinionSection({ opinions, profile }: OpinionSectionProps) {
+export default function OpinionSection({ opinions }: OpinionSectionProps) {
   return (
     <section id="opini" className="py-16 md:py-24">
       <div className="container">
@@ -21,7 +20,7 @@ export default function OpinionSection({ opinions, profile }: OpinionSectionProp
           </p>
         </div>
 
-        <OpinionList opinions={opinions.slice(0, 6)} authorName={profile.name} />
+        <OpinionList opinions={opinions.slice(0, 6)} />
 
         {opinions.length > 6 && (
             <div className="text-center mt-12">

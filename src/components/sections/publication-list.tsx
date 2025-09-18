@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -36,12 +37,10 @@ import AnimatedCard from '../animated-card';
 
 interface PublicationListProps {
   publications: PublicationContent[];
-  authorName: string;
 }
 
 export default function PublicationList({
-  publications,
-  authorName
+  publications
 }: PublicationListProps) {
   const [selectedPub, setSelectedPub] = useState<PublicationContent | null>(null);
 
@@ -65,7 +64,7 @@ export default function PublicationList({
             >
               <div className="aspect-video overflow-hidden relative">
                 <Image
-                  src={pub.image.imageUrl}
+                  src={pub.imageUrl}
                   alt={pub.title}
                   width={600}
                   height={400}
@@ -104,7 +103,7 @@ export default function PublicationList({
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <User className="w-4 h-4 mr-2" />
-                  <span>{authorName}</span>
+                  <span>{pub.author}</span>
                 </div>
                 <div className="flex items-center -space-x-2">
                   <Button
@@ -151,7 +150,7 @@ export default function PublicationList({
                 </div>
                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-2" />
-                  <span>{authorName}</span>
+                  <span>{selectedPub?.author}</span>
                 </div>
                 <div className="flex items-center flex-wrap gap-2">
                   <TagIcon className="w-4 h-4 mr-2" />
@@ -180,12 +179,6 @@ export default function PublicationList({
                 <Link href={selectedPub?.fileUrl || '#'} target="_blank" rel="noopener noreferrer">
                   <Download className="mr-2 h-4 w-4" />
                   Download
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="flex-1">
-                <Link href={selectedPub?.viewUrl || '#'} target="_blank" rel="noopener noreferrer">
-                  <Eye className="mr-2 h-4 w-4" />
-                  Lihat Sumber
                 </Link>
               </Button>
             </div>

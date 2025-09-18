@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Menu, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,20 +16,16 @@ import { ThemeToggle } from './theme-toggle';
 import { navLinks } from './main-nav';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
-import { usePathname } from 'next/navigation';
+import { useAuth } from '@/components/auth-provider';
+import { clearSession } from '@/lib/actions';
+import { auth } from '@/lib/firebase-client';
+
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    // Check for cookie on mount and on path change
-    setIsAuthenticated(Cookies.get('__session') === 'true');
-  }, [pathname]);
 
 
   const handleScroll = useCallback(() => {
@@ -51,15 +47,15 @@ export default function Header() {
     setMobileNavOpen(false);
   };
 
-  const onLogout = () => {
-    Cookies.remove('__session', { path: '/' });
-    setIsAuthenticated(false);
+  const onLogout = async () => {
+    await auth.signOut();
+    await clearSession();
     router.push('/login');
     router.refresh();
   };
   
   const AuthButton = () => {
-    if (isAuthenticated) {
+    if (user) {
       return (
         <div className="flex items-center gap-2">
           <Button asChild>

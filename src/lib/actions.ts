@@ -6,8 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { categorizeContent } from '@/ai/flows/categorize-content';
 import { saveFeedback } from '@/ai/flows/save-feedback';
 import { initializeApp, getApps } from 'firebase-admin/app';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { getStorage as getAdminStorage } from 'firebase-admin/storage';
 import { cookies } from 'next/headers';
 
 
@@ -20,41 +20,58 @@ if (!getApps().length) {
   console.log("Firebase Admin SDK initialized on the server.");
 }
 const db = getFirestore();
+const adminAuth = getAdminAuth();
 
 
 // --- AUTH HELPER ---
-async function verifyAuth() {
+async function verifySessionCookie() {
   const sessionCookie = cookies().get('__session')?.value;
-  // This is a simplified check. In a real-world scenario, you'd verify a JWT or session token.
-  if (sessionCookie !== 'true') {
-     throw new Error('Unauthorized: Not logged in.');
+  if (!sessionCookie) {
+    throw new Error('Unauthorized: No session cookie found.');
+  }
+  try {
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+    return decodedClaims;
+  } catch (error) {
+    throw new Error('Unauthorized: Invalid session cookie.');
   }
 }
 
+
 // --- LOGIN ACTION ---
 const loginSchema = z.object({
-  code: z.string().min(1, "Kode akses harus diisi."),
+  idToken: z.string().min(1, "ID token is required."),
 });
 
-// This action now only validates the code. Cookie handling is moved to the client.
-export async function handleLogin(prevState: any, formData: FormData) {
+export async function createSession(prevState: any, formData: FormData) {
     const validatedFields = loginSchema.safeParse({
-        code: formData.get('code'),
+        idToken: formData.get('idToken'),
     });
 
     if (!validatedFields.success) {
-        return { success: false, message: 'Validasi gagal.', errors: validatedFields.error.flatten().fieldErrors };
-    }
-    
-    // The access code is now `090107`
-    if (validatedFields.data.code !== '090107') {
-        return { success: false, message: 'Kode akses salah.', errors: null };
+        return { success: false, message: 'ID Token is missing.' };
     }
 
-    // On successful validation, just return success. 
-    // The client will handle cookie setting and redirection.
-    return { success: true, message: 'Login Berhasil!', errors: null };
+    const { idToken } = validatedFields.data;
+
+    // Set session expiration to 5 days.
+    const expiresIn = 60 * 60 * 24 * 5 * 1000;
+
+    try {
+        const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+        cookies().set('__session', sessionCookie, { maxAge: expiresIn, httpOnly: true, secure: true });
+        return { success: true, message: 'Session created successfully.' };
+    } catch (error) {
+        console.error("Error creating session:", error);
+        return { success: false, message: 'Failed to create session.' };
+    }
 }
+
+export async function clearSession() {
+    cookies().delete('__session');
+    return { success: true, message: 'Session cleared.' };
+}
+
 
 // --- CATEGORIZE ACTION ---
 
@@ -64,7 +81,7 @@ const CategorizeSchema = z.object({
 });
 
 export async function handleCategorize(prevState: any, formData: FormData) {
-  await verifyAuth(); 
+  await verifySessionCookie(); 
   const validatedFields = CategorizeSchema.safeParse({
     title: formData.get('title'),
     body: formData.get('body'),
@@ -108,7 +125,7 @@ const profileSchema = z.object({
 
 
 export async function updateProfile(prevState:any, formData: FormData) {
-  await verifyAuth();
+  const decodedClaims = await verifySessionCookie();
   
   const validatedFields = profileSchema.safeParse({
     name: formData.get('name'),
@@ -152,7 +169,7 @@ const opinionUploadSchema = z.object({
 
 
 export async function handleOpinionUpload(prevState: any, formData: FormData) {
-    await verifyAuth();
+    const decodedClaims = await verifySessionCookie();
    
     const validatedFields = opinionUploadSchema.safeParse({
         postedOn: formData.get('postedOn'),
@@ -169,13 +186,13 @@ export async function handleOpinionUpload(prevState: any, formData: FormData) {
     try {
         const { title, tags, content, imageUrl, postedOn } = validatedFields.data;
         
-        await db.collection('content').add({
-          contentType: 'opinion',
+        await db.collection('opinions').add({
           title,
           tags,
           content,
           imageUrl,
           postedOn,
+          author: decodedClaims.name || decodedClaims.email,
           createdAt: new Date().toISOString(),
         });
 
@@ -202,7 +219,7 @@ const publicationUploadSchema = z.object({
 });
 
 export async function handlePublicationUpload(prevState: any, formData: FormData) {
-    await verifyAuth();
+    const decodedClaims = await verifySessionCookie();
     
     const validatedFields = publicationUploadSchema.safeParse({
         publishedOn: formData.get('publishedOn'),
@@ -220,18 +237,16 @@ export async function handlePublicationUpload(prevState: any, formData: FormData
     
     try {
         const { title, tags, description, fileUrl, status, imageUrl, publishedOn } = validatedFields.data;
-        const viewUrl = fileUrl; 
         
-        await db.collection('content').add({
-          contentType: 'publication',
+        await db.collection('publications').add({
           title,
           tags,
           description,
           fileUrl,
-          viewUrl,
           status,
           imageUrl,
           publishedOn,
+          author: decodedClaims.name || decodedClaims.email,
           createdAt: new Date().toISOString(),
         });
 
@@ -256,7 +271,7 @@ const ongoingUploadSchema = z.object({
 });
 
 export async function handleOngoingUpload(prevState: any, formData: FormData) {
-    await verifyAuth();
+    const decodedClaims = await verifySessionCookie();
    
     const validatedFields = ongoingUploadSchema.safeParse({
         startedOn: formData.get('startedOn'),
@@ -273,13 +288,13 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
     try {
         const { title, tags, description, imageUrl, startedOn } = validatedFields.data;
 
-        await db.collection('content').add({
-          contentType: 'ongoing',
+        await db.collection('ongoing').add({
           title,
           tags,
           description,
           imageUrl,
           startedOn: new Date(startedOn),
+          author: decodedClaims.name || decodedClaims.email,
           createdAt: new Date().toISOString(),
         });
 
@@ -294,24 +309,23 @@ export async function handleOngoingUpload(prevState: any, formData: FormData) {
 }
 
 // --- DELETE CONTENT ACTION ---
-export async function handleDeleteContent(contentId: string) {
-  await verifyAuth();
+export async function handleDeleteContent(collection: string, contentId: string) {
+  await verifySessionCookie();
   
-  if (!contentId || typeof contentId !== 'string') {
-    return { success: false, message: 'ID Konten tidak valid.' };
+  if (!contentId || typeof contentId !== 'string' || !['opinions', 'publications', 'ongoing'].includes(collection)) {
+    return { success: false, message: 'ID atau Koleksi Konten tidak valid.' };
   }
   try {
-    await db.collection('content').doc(contentId).delete();
+    // TODO: Also delete associated image from Storage
+    await db.collection(collection).doc(contentId).delete();
 
     revalidatePath('/admin01');
     revalidatePath('/');
-    revalidatePath('/opini');
-    revalidatePath('/publikasi');
-    revalidatePath('/ongoing');
+    revalidatePath(`/${collection === 'opinions' ? 'opini' : collection === 'publications' ? 'publikasi' : 'ongoing'}`);
 
     return { success: true, message: 'Konten berhasil dihapus.' };
   } catch (error) {
-    console.error('Error deleting content from Firestore:', error);
+    console.error(`Error deleting content from ${collection}:`, error);
     return { success: false, message: 'Gagal menghapus konten dari database.' };
   }
 }

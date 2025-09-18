@@ -5,7 +5,6 @@ import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 // --- FIREBASE ADMIN INITIALIZATION (SERVER-SIDE) ---
-// This ensures Firebase Admin is initialized only once.
 if (!getApps().length) {
   initializeApp({
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -51,37 +50,32 @@ export type ContentType = 'opinion' | 'publication' | 'ongoing';
 // Base interface for all content
 export interface ContentBase {
   id: string;
-  contentType: ContentType;
   title: string;
   tags: Tag[];
-  image: {
-    imageUrl: string;
-  };
+  imageUrl: string;
 }
 
 // Specific content types extending the base
 export interface OpinionContent extends ContentBase {
-  contentType: 'opinion';
   postedOn: string; // "YYYY-MM-DD"
   content: string;
+  author: string;
 }
 
 export interface PublicationContent extends ContentBase {
-  contentType: 'publication';
   publishedOn: string; // "Q2 2024", etc.
   status: 'public' | 'private';
   fileUrl: string;
-  viewUrl: string;
   description: string;
+  author: string;
 }
 
 export interface OngoingContent extends ContentBase {
-  contentType: 'ongoing';
   startedOn: Date;
   description: string;
+  author: string;
 }
 
-export type ContentPost = OpinionContent | PublicationContent | OngoingContent;
 
 // --- DEFAULT DATA for fallback ---
 const defaultProfile: Profile = {
@@ -106,7 +100,6 @@ export async function getProfile(): Promise<Profile> {
     
     if (!profileDoc.exists) {
       console.warn("Profile document not found in Firestore, returning default.");
-      // Optional: Create the default profile if it doesn't exist
       await db.collection('profile').doc('main').set(defaultProfile);
       return defaultProfile;
     }
@@ -119,61 +112,60 @@ export async function getProfile(): Promise<Profile> {
   }
 }
 
-export async function getAllContent(): Promise<ContentPost[]> {
-  try {
-    // Order by creation date descending to get newest content first
-    const contentSnapshot = await db.collection('content').orderBy('createdAt', 'desc').get();
-
-    if (contentSnapshot.empty) {
-      return [];
+async function fetchCollection<T extends ContentBase>(collectionName: string): Promise<T[]> {
+    try {
+        const snapshot = await db.collection(collectionName).orderBy('createdAt', 'desc').get();
+        if (snapshot.empty) {
+            return [];
+        }
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            const baseData = {
+                id: doc.id,
+                title: data.title || 'Untitled',
+                tags: data.tags || [],
+                imageUrl: data.imageUrl || "https://picsum.photos/seed/default/600/400",
+                author: data.author || 'Anonymous'
+            };
+             if (collectionName === 'ongoing') {
+                return {
+                    ...baseData,
+                    description: data.description || '',
+                    startedOn: data.startedOn?.toDate ? data.startedOn.toDate() : new Date(),
+                } as T;
+            } else if (collectionName === 'publications') {
+                 return {
+                    ...baseData,
+                    description: data.description || '',
+                    publishedOn: data.publishedOn || 'N/A',
+                    status: data.status || 'private',
+                    fileUrl: data.fileUrl || '#'
+                } as T;
+            } else { // opinions
+                 return {
+                    ...baseData,
+                    content: data.content || '',
+                    postedOn: data.postedOn || 'N/A'
+                } as T;
+            }
+        });
+    } catch (error) {
+        console.error(`Error fetching ${collectionName} from Firestore, returning empty array:`, error);
+        return [];
     }
+}
 
-    return contentSnapshot.docs.map(doc => {
-      const data = doc.data();
-      // Ensure there is an ID and a valid content type
-      if (!doc.id || !data.contentType) return null;
 
-      const base = {
-        id: doc.id,
-        contentType: data.contentType,
-        title: data.title || 'Untitled',
-        tags: data.tags || [],
-        image: { imageUrl: data.imageUrl || "https://picsum.photos/seed/default/600/400" },
-      };
+export async function getOpinions(): Promise<OpinionContent[]> {
+    return fetchCollection<OpinionContent>('opinions');
+}
 
-      if (data.contentType === 'opinion') {
-        return {
-          ...base,
-          postedOn: data.postedOn || 'N/A',
-          content: data.content || ''
-        } as OpinionContent;
-      }
-      if (data.contentType === 'publication') {
-        return {
-          ...base,
-          publishedOn: data.publishedOn || 'N/A',
-          status: data.status || 'private',
-          fileUrl: data.fileUrl || '#',
-          viewUrl: data.viewUrl || '#',
-          description: data.description || ''
-        } as PublicationContent;
-      }
-      if (data.contentType === 'ongoing') {
-        // Firestore Timestamps need to be converted to JS Dates
-        const startedOnDate = data.startedOn?.toDate ? data.startedOn.toDate() : new Date();
-        return {
-          ...base,
-          startedOn: startedOnDate,
-          description: data.description || ''
-        } as OngoingContent;
-      }
-      return null;
-    }).filter((item): item is ContentPost => item !== null); // Type guard to filter out nulls
+export async function getPublications(): Promise<PublicationContent[]> {
+    return fetchCollection<PublicationContent>('publications');
+}
 
-  } catch (error) {
-      console.error("Error fetching all content from Firestore, returning empty array:", error);
-      return [];
-  }
+export async function getOngoingResearches(): Promise<OngoingContent[]> {
+    return fetchCollection<OngoingContent>('ongoing');
 }
 
 
@@ -181,16 +173,12 @@ export async function getAllContent(): Promise<ContentPost[]> {
  * Fetches all necessary data for the main page in a single operation.
  */
 export async function getHomePageData() {
-    const [profile, allContent] = await Promise.all([
+    const [profile, opinions, publications, ongoingResearches] = await Promise.all([
       getProfile(),
-      getAllContent()
+      getOpinions(),
+      getPublications(),
+      getOngoingResearches(),
     ]);
-
-    // Sorting is now handled by the Firestore query for more efficiency,
-    // but we still need to filter.
-    const opinions = allContent.filter(c => c.contentType === 'opinion') as OpinionContent[];
-    const publications = allContent.filter(c => c.contentType === 'publication') as PublicationContent[];
-    const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing') as OngoingContent[];
 
     return {
       profile,

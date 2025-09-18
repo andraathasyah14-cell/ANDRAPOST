@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Loader2, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { Loader2, UploadCloud, Image as ImageIcon, File as FileIcon } from 'lucide-react';
 import Image from 'next/image';
 import { handleImageUpload, type UploadProgress } from '@/lib/storage';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -48,7 +48,9 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const [isUploading, setIsUploading] = useState<'image' | 'file' | null>(null);
 
   useEffect(() => {
     if (state?.message) {
@@ -60,26 +62,33 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
       if (state.success) {
         formRef.current?.reset();
         setImageUrl(null);
+        setFileUrl(null);
       }
     }
   }, [state, toast]);
 
-  const onImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploadProgress({ percentage: 0, speed: '0 KB/s' });
+    setIsUploading(type);
+
     try {
-      const url = await handleImageUpload(file, (progress) => {
+      const url = await handleImageUpload(file, 'publications', (progress) => {
         setUploadProgress(progress);
       });
-      setImageUrl(url);
+      if (type === 'image') {
+        setImageUrl(url);
+      } else {
+        setFileUrl(url);
+      }
       toast({
         title: 'Berhasil',
-        description: 'Gambar berhasil diunggah.',
+        description: `${type === 'image' ? 'Gambar' : 'File'} berhasil diunggah.`,
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat mengunggah gambar.';
+      const errorMessage = error instanceof Error ? error.message : `Terjadi kesalahan saat mengunggah ${type}.`;
       toast({
         title: 'Gagal',
         description: errorMessage,
@@ -87,12 +96,14 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
       });
     } finally {
       setUploadProgress(null);
+      setIsUploading(null);
     }
   };
 
   return (
     <form ref={formRef} action={formAction} className="space-y-6">
       <input type="hidden" name="imageUrl" value={imageUrl || ''} />
+      <input type="hidden" name="fileUrl" value={fileUrl || ''} />
        <div className="space-y-2">
           <Label htmlFor="publishedOn">Waktu (tanggal dibuat)</Label>
           <Input id="publishedOn" name="publishedOn" placeholder="e.g., Q2 2024 atau YYYY-MM-DD" />
@@ -120,12 +131,37 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
         <Textarea id="description" name="description" placeholder="Deskripsi singkat mengenai publikasi..." rows={4} />
         {state?.errors?.description && <p className="text-sm text-destructive">{state.errors.description[0]}</p>}
       </div>
+      
        <div className="space-y-2">
-        <Label htmlFor="fileUrl">URL File Publikasi</Label>
-        <Input id="fileUrl" name="fileUrl" type="url" placeholder="https://example.com/file.pdf" />
-         <p className="text-xs text-muted-foreground">Harap masukkan URL yang valid (diawali dengan http/https).</p>
+        <Label htmlFor="file-upload-pub">File Publikasi (PDF)</Label>
+         <div className="flex items-center gap-4">
+            <div className="w-32 h-20 bg-muted rounded-md flex items-center justify-center">
+                 {isUploading === 'file' ? <Loader2 className="animate-spin" /> : fileUrl ? (
+                    <div className="text-center">
+                        <FileIcon className="mx-auto" />
+                        <p className="text-xs mt-1 text-muted-foreground truncate">File terunggah</p>
+                    </div>
+                ) : (
+                    <FileIcon className="text-muted-foreground" />
+                )}
+            </div>
+            <Button type="button" asChild variant="outline">
+                <Label htmlFor="file-upload-pub" className="cursor-pointer">
+                <UploadCloud className="mr-2" />
+                Unggah File
+                </Label>
+            </Button>
+         </div>
+        <Input id="file-upload-pub" type="file" className="hidden" accept="application/pdf" onChange={(e) => onFileChange(e, 'file')} disabled={!!isUploading} />
+        {isUploading === 'file' && uploadProgress && (
+          <div className="space-y-1">
+            <Progress value={uploadProgress.percentage} className="h-2" />
+            <p className="text-xs text-muted-foreground">{Math.round(uploadProgress.percentage)}% | {uploadProgress.speed}</p>
+          </div>
+        )}
         {state?.errors?.fileUrl && <p className="text-sm text-destructive">{state.errors.fileUrl[0]}</p>}
       </div>
+
       <div className="space-y-2">
         <Label>Status</Label>
         <RadioGroup name="status" defaultValue="public" className="flex gap-4">
@@ -141,10 +177,10 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
         {state?.errors?.status && <p className="text-sm text-destructive">{state.errors.status[0]}</p>}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="image-upload-pub">Gambar</Label>
+        <Label htmlFor="image-upload-pub">Gambar Thumbnail</Label>
         <div className="flex items-center gap-4">
           <div className="w-32 h-20 bg-muted rounded-md flex items-center justify-center">
-            {uploadProgress ? <Loader2 className="animate-spin" /> : imageUrl ? (
+            {isUploading === 'image' ? <Loader2 className="animate-spin" /> : imageUrl ? (
               <Image src={imageUrl} alt="Preview" width={128} height={80} className="object-cover rounded-md w-full h-full" />
             ) : (
               <ImageIcon className="text-muted-foreground" />
@@ -157,8 +193,8 @@ export default function PublicationForm({ onUpload }: { onUpload: (prevState: an
             </Label>
           </Button>
         </div>
-        <Input id="image-upload-pub" type="file" className="hidden" accept="image/*" onChange={onImageChange} disabled={!!uploadProgress} />
-        {uploadProgress && (
+        <Input id="image-upload-pub" type="file" className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'image')} disabled={!!isUploading} />
+        {isUploading === 'image' && uploadProgress && (
           <div className="space-y-1">
             <Progress value={uploadProgress.percentage} className="h-2" />
             <p className="text-xs text-muted-foreground">{Math.round(uploadProgress.percentage)}% | {uploadProgress.speed}</p>

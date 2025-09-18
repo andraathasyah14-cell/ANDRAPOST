@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -24,10 +25,9 @@ import AnimatedCard from '../animated-card';
 
 interface OpinionListProps {
   opinions: OpinionContent[];
-  authorName: string;
 }
 
-export default function OpinionList({ opinions, authorName }: OpinionListProps) {
+export default function OpinionList({ opinions }: OpinionListProps) {
   const [selectedOpinion, setSelectedOpinion] = useState<OpinionContent | null>(
     null
   );
@@ -44,7 +44,7 @@ export default function OpinionList({ opinions, authorName }: OpinionListProps) 
             <Card className="flex flex-col overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-xl h-full">
               <div className="aspect-video overflow-hidden">
                 <Image
-                  src={opinion.image.imageUrl}
+                  src={opinion.imageUrl}
                   alt={opinion.title}
                   width={600}
                   height={400}
@@ -72,7 +72,7 @@ export default function OpinionList({ opinions, authorName }: OpinionListProps) 
                 </div>
                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-2" />
-                  <span>{authorName}</span>
+                  <span>{opinion.author}</span>
                 </div>
               </CardFooter>
             </Card>
@@ -97,7 +97,7 @@ export default function OpinionList({ opinions, authorName }: OpinionListProps) 
                 </div>
                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-2" />
-                  <span>{authorName}</span>
+                  <span>{selectedOpinion?.author}</span>
                 </div>
                 <div className="flex items-center flex-wrap gap-2">
                   <TagIcon className="w-4 h-4 mr-2" />

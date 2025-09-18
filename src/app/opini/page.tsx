@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 export default async function AllOpinionsPage() {
-  const { opinions, profile } = await getHomePageData();
+  const { opinions } = await getHomePageData();
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -30,7 +30,7 @@ export default async function AllOpinionsPage() {
             </p>
           </div>
 
-          <OpinionList opinions={opinions} authorName={profile.name} />
+          <OpinionList opinions={opinions} />
         </div>
       </main>
       <Footer />

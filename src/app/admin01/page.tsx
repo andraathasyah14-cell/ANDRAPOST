@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
 import { Loader2 } from 'lucide-react';
 import ProfileForm from '@/components/admin/profile-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,46 +10,51 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BrainCircuit } from 'lucide-react';
 import Logo from '@/components/logo';
-import { getAllContent, getProfile, type OpinionContent, type PublicationContent, type OngoingContent, type Profile } from '@/lib/data';
+import { getProfile, getOpinions, getPublications, getOngoingResearches, type OpinionContent, type PublicationContent, type OngoingContent, type Profile } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OpinionForm from '@/components/admin/opinion-form';
 import PublicationForm from '@/components/admin/publication-form';
 import OngoingForm from '@/components/admin/ongoing-form';
 import { handleOpinionUpload, handlePublicationUpload, handleOngoingUpload } from '@/lib/actions';
 import ContentList from '@/components/admin/content-list';
+import { useAuth } from '@/components/auth-provider';
 
-type ContentPost = OpinionContent | PublicationContent | OngoingContent;
 
 export default function AdminPage() {
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [allContent, setAllContent] = useState<ContentPost[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [opinions, setOpinions] = useState<OpinionContent[]>([]);
+  const [publications, setPublications] = useState<PublicationContent[]>([]);
+  const [ongoingResearches, setOngoingResearches] = useState<OngoingContent[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
-    // Direct check for the session cookie.
-    const session = Cookies.get('__session');
-    if (session === 'true') {
-      setIsAuthenticated(true);
-      const fetchData = async () => {
-        setIsLoading(true);
-        const [profileData, contentData] = await Promise.all([
-          getProfile(),
-          getAllContent()
-        ]);
-        setProfile(profileData);
-        setAllContent(contentData);
-        setIsLoading(false);
-      };
-      fetchData();
-    } else {
-      // If no session, redirect to login immediately.
+    if (!loading && !user) {
       router.replace('/login');
     }
-  }, [router]);
+    if (!loading && user) {
+      const fetchData = async () => {
+        setIsDataLoading(true);
+        const [profileData, opinionsData, publicationsData, ongoingData] = await Promise.all([
+          getProfile(),
+          getOpinions(),
+          getPublications(),
+          getOngoingResearches()
+        ]);
+        setProfile(profileData);
+        setOpinions(opinionsData);
+        setPublications(publicationsData);
+        setOngoingResearches(ongoingData);
+        setIsDataLoading(false);
+      };
+      fetchData();
+    }
+  }, [user, loading, router]);
 
-  if (!isAuthenticated || isLoading || !profile) {
+
+  if (loading || isDataLoading || !user || !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -61,15 +65,11 @@ export default function AdminPage() {
   const profileData = {
     name: profile.name,
     description: profile.description,
-    totalPublications: allContent.filter(c => c.contentType === 'publication').length,
-    totalOpinions: allContent.filter(c => c.contentType === 'opinion').length,
+    totalPublications: publications.length,
+    totalOpinions: opinions.length,
     tools: profile.tools,
     imageUrl: profile.imageUrl,
   };
-  
-  const opinions = allContent.filter(c => c.contentType === 'opinion') as OpinionContent[];
-  const publications = allContent.filter(c => c.contentType === 'publication') as PublicationContent[];
-  const ongoingResearches = allContent.filter(c => c.contentType === 'ongoing') as OngoingContent[];
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center p-4">

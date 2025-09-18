@@ -1,40 +1,48 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
-// This middleware is no longer used in the new simplified auth system.
-// It is kept here as a reference but is not active.
-// The matching config is removed to disable it.
+// Initialize Firebase Admin SDK
+if (!getApps().length) {
+  initializeApp({
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  });
+}
 
-export function middleware(request: NextRequest) {
-  const sessionCookie = request.cookies.get('__session')?.value;
+async function verifySessionCookie(req: NextRequest) {
+  const sessionCookie = req.cookies.get('__session')?.value;
+  if (!sessionCookie) {
+    return null;
+  }
+  try {
+    const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
+    return decodedClaims;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const sessionSecret = process.env.ADMIN_SESSION_SECRET;
-  if (!sessionSecret) {
-      console.error("FATAL: ADMIN_SESSION_SECRET is not set in .env. Middleware cannot run securely.");
-      if (pathname.startsWith('/admin01')) {
-          return NextResponse.redirect(new URL('/login?error=config_error', request.url));
-      }
-      return NextResponse.next();
+  const user = await verifySessionCookie(request);
+
+  // If trying to access admin area and not logged in, redirect to login
+  if (pathname.startsWith('/admin01') && !user) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  const isSessionValid = sessionCookie === sessionSecret;
-
-  if (pathname.startsWith('/admin01') && !isSessionValid) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  if (pathname === '/login' && isSessionValid) {
+  // If trying to access login page but already logged in, redirect to admin
+  if (pathname === '/login' && user) {
     return NextResponse.redirect(new URL('/admin01', request.url));
   }
 
   return NextResponse.next();
 }
 
-// The matcher is removed to disable the middleware entirely.
+// The matcher enables the middleware for admin and login routes.
 export const config = {
-  matcher: [],
+  matcher: ['/admin01/:path*', '/login'],
 };

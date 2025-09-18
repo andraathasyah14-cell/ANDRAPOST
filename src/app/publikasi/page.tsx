@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 export default async function AllPublicationsPage() {
-  const { publications, profile } = await getHomePageData();
+  const { publications } = await getHomePageData();
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -30,7 +30,7 @@ export default async function AllPublicationsPage() {
             </p>
           </div>
 
-          <PublicationList publications={publications} authorName={profile.name} />
+          <PublicationList publications={publications} />
         </div>
       </main>
       <Footer />

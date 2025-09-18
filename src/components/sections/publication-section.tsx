@@ -1,15 +1,14 @@
 
 import { Button } from '@/components/ui/button';
-import type { PublicationContent, Profile } from '@/lib/data';
+import type { PublicationContent } from '@/lib/data';
 import PublicationList from './publication-list';
 import Link from 'next/link';
 
 interface PublicationSectionProps {
     publications: PublicationContent[];
-    profile: Profile;
 }
 
-export default function PublicationSection({ publications, profile }: PublicationSectionProps) {
+export default function PublicationSection({ publications }: PublicationSectionProps) {
   return (
     <section id="publikasi" className="py-16 md:py-24 bg-card/50">
       <div className="container">
@@ -23,7 +22,7 @@ export default function PublicationSection({ publications, profile }: Publicatio
           </p>
         </div>
 
-        <PublicationList publications={publications.slice(0, 6)} authorName={profile.name} />
+        <PublicationList publications={publications.slice(0, 6)} />
 
         {publications.length > 6 && (
             <div className="text-center mt-12">

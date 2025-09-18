@@ -1,3 +1,4 @@
+
 // src/components/admin/profile-form.tsx
 'use client';
 
@@ -119,8 +120,7 @@ export default function ProfileForm({ profileData }: ProfileFormProps) {
     setUploadProgress({ percentage: 0, speed: '0 KB/s' });
     
     try {
-      // Use the new replacement function
-      const url = await handleImageReplacement(oldImageUrl, file, (progress) => {
+      const url = await handleImageReplacement(oldImageUrl, file, 'profile', (progress) => {
         setUploadProgress(progress);
       });
       
