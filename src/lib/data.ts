@@ -128,7 +128,7 @@ async function fetchCollection<T extends ContentBase>(collectionName: string): P
                 return {
                     ...baseData,
                     description: data.description || '',
-                    startedOn: data.startedOn?.toDate ? data.startedOn.toDate() : new Date(),
+                    startedOn: new Date(data.startedOn),
                 } as T;
             } else if (collectionName === 'publications') {
                  return {
