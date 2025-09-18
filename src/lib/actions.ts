@@ -41,14 +41,21 @@ export async function createSession(prevState: any, formData: FormData) {
   
   const { idToken } = validatedFields.data;
   const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 hari
+  const adminEmail = 'andraathasyah14@gmail.com';
 
   try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+
+    if (decodedToken.email !== adminEmail) {
+        return { success: false, message: `Akses ditolak. Hanya ${adminEmail} yang diizinkan masuk.` };
+    }
+
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
     cookies().set('__session', sessionCookie, { maxAge: expiresIn, httpOnly: true, secure: process.env.NODE_ENV === 'production' });
     return { success: true, message: 'Sesi berhasil dibuat.' };
   } catch (error) {
     console.error("Error creating session cookie:", error);
-    return { success: false, message: 'Gagal membuat sesi cookie di server.' };
+    return { success: false, message: 'Gagal membuat sesi cookie di server. Kredensial mungkin tidak valid.' };
   }
 }
 
@@ -346,3 +353,5 @@ export async function handleDeleteContent(collectionName: string, docId: string)
         return { success: false, message: "Terjadi kesalahan saat menghapus konten." };
     }
 }
+
+    
