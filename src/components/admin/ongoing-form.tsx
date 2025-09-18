@@ -48,6 +48,14 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
   const formRef = useRef<HTMLFormElement>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const [defaultDate, setDefaultDate] = useState('');
+
+  useEffect(() => {
+    // Set a client-side default value for the date input to avoid hydration mismatches
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    setDefaultDate(now.toISOString().slice(0, 16));
+  }, []);
 
   useEffect(() => {
     if (state?.message) {
@@ -94,7 +102,7 @@ export default function OngoingForm({ onUpload }: { onUpload: (prevState: any, f
       <input type="hidden" name="imageUrl" value={imageUrl || ''} />
       <div className="space-y-2">
           <Label htmlFor="startedOn">Waktu (tanggal dimulai)</Label>
-          <Input id="startedOn" name="startedOn" type="date" placeholder="YYYY-MM-DD" />
+          <Input id="startedOn" name="startedOn" type="datetime-local" defaultValue={defaultDate} />
           {state?.errors?.startedOn && <p className="text-sm text-destructive">{state.errors.startedOn[0]}</p>}
       </div>
        <div className="space-y-2">

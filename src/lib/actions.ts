@@ -176,14 +176,18 @@ async function addContent(collectionName: 'opinions' | 'publications' | 'ongoing
       throw new Error("Unauthorized");
     }
 
-    const payload: any = { 
+    let payload: any = { 
         ...data,
         author: user.name || user.email, // Use name if available, else email
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
     };
 
     if (collectionName === 'ongoing') {
-      payload.startedOn = new Date(data.startedOn);
+      // Ensure startedOn is a proper Date object before sending to Firestore
+      payload = {
+        ...payload,
+        startedOn: new Date(data.startedOn),
+      };
     }
     
     await adminDb.collection(collectionName).add(payload);

@@ -88,9 +88,6 @@ export async function getProfile(): Promise<Profile> {
     
     if (!profileDoc.exists) {
       console.warn("Profile document not found in Firestore. Returning default profile data.");
-      // Do NOT write to the database during a read operation in a server component.
-      // This prevents potential infinite loops during development hot-reloads.
-      // The profile can be created/updated via the admin panel form.
       return defaultProfile;
     }
 
@@ -128,7 +125,8 @@ async function fetchCollection<T extends ContentBase>(collectionName: string): P
                 return {
                     ...baseData,
                     description: data.description || '',
-                    startedOn: new Date(data.startedOn),
+                    // Firestore returns a Timestamp, which needs to be converted to a Date.
+                    startedOn: data.startedOn?.toDate ? data.startedOn.toDate() : new Date(),
                 } as T;
             } else if (collectionName === 'publications') {
                  return {
